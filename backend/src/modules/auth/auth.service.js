@@ -3,7 +3,7 @@ import prisma from '../../lib/prisma.js'
 import redis from '../../lib/redis.js'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../utils/jwt.js'
 
-export const register = async ({ email, password, displayName }) => {
+export const register = async ({ email, password, displayName, gender, dateOfBirth }) => {
   const exists = await prisma.user.findFirst({
     where: { email }
   })
@@ -11,8 +11,8 @@ export const register = async ({ email, password, displayName }) => {
 
   const hashed = await bcrypt.hash(password, 12)
   const user = await prisma.user.create({
-    data: { email, displayName, password: hashed },
-    select: { id: true, email: true, displayName: true }
+    data: { email, displayName, password: hashed, gender, dateOfBirth },
+    select: { id: true, email: true, displayName: true, gender: true, dateOfBirth: true }
   })
   return user
 }

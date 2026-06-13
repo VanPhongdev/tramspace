@@ -9,11 +9,43 @@ export const registerSchema = z.object({
     .min(6, 'Mật khẩu tối thiểu 6 ký tự')
     .max(100, 'Mật khẩu tối đa 100 ký tự'),
 
+  confirmPassword: z.string()
+    .min(6, 'Xác nhận mật khẩu cần ít nhất 6 ký tự')
+    .max(100, 'Xác nhận mật khẩu tối đa 100 ký tự'),
+
   displayName: z.string()
     .trim()
-    .min(1, 'Tên hiển thị không được để trống')
-    .max(100, 'Tên hiển thị tối đa 100 ký tự')
-    .optional(),
+    .min(4, 'Họ và tên phải có ít nhất 4 ký tự')
+    .max(100, 'Tên hiển thị tối đa 100 ký tự'),
+
+  gender: z.preprocess(
+    (value) => typeof value === 'string' ? value.trim().toUpperCase() : value,
+    z.enum(['MALE', 'FEMALE', 'OTHER'], {
+      errorMap: () => ({ message: 'Giới tính không hợp lệ' })
+    })
+  ).transform((value) => ({ MALE: 0, FEMALE: 1, OTHER: 2 }[value])),
+
+  dateOfBirth: z.string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày sinh không hợp lệ')
+    .transform((value) => new Date(value))
+    .refine((date) => !Number.isNaN(date.getTime()), { message: 'Ngày sinh không hợp lệ' })
+    .refine((date) => {
+      const today = new Date()
+      const birth = new Date(date)
+      const age = today.getFullYear() - birth.getFullYear()
+      const monthDiff = today.getMonth() - birth.getMonth()
+      const dayDiff = today.getDate() - birth.getDate()
+      return age > 13 || (age === 13 && (monthDiff > 0 || (monthDiff === 0 && dayDiff >= 0)))
+    }, { message: 'Bạn phải từ 13 tuổi trở lên' }),
+}).superRefine((data, ctx) => {
+  if (data.password !== data.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['confirmPassword'],
+      message: 'Mật khẩu xác nhận không khớp',
+    })
+  }
 })
 
 export const loginSchema = z.object({

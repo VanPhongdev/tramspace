@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { currentUser } from '../../data/mockData';
 
 /**
  * CreatePost — ô tạo bài viết.
- * onSubmit(content, attachments) — TODO: POST /api/posts
+ * onSubmit(content) — gọi callback khi người dùng đăng bài.
  */
-export default function CreatePost({ onSubmit }) {
+export default function CreatePost({ currentUser, onSubmit }) {
   const [text, setText] = useState('');
 
   const handlePost = () => {
     if (!text.trim()) return;
     onSubmit?.(text);
     setText('');
-    // TODO: POST /api/posts { content: text }
   };
 
   return (
@@ -21,9 +19,9 @@ export default function CreatePost({ onSubmit }) {
         {/* Avatar */}
         <div
           className="feed-avatar"
-          style={{ background: currentUser.avatarColor, flexShrink: 0 }}
+          style={{ background: currentUser?.avatarColor ?? '#006b5f', flexShrink: 0 }}
         >
-          <span>{currentUser.initials}</span>
+          <span>{currentUser?.initials ?? 'US'}</span>
         </div>
 
         <textarea

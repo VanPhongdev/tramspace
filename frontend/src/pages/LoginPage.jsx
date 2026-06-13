@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+﻿import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import PageTransition from '../components/PageTransition';
 import AuthVisual from '../components/auth/AuthVisual';
 import InputField from '../components/auth/InputField';
@@ -7,11 +7,51 @@ import SocialAuthButtons from '../components/auth/SocialAuthButtons';
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '', remember: false });
+  const navigate = useNavigate()
+  const validateEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState(null)
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Login:', form);
-    // TODO: gọi API đăng nhập
+    const nextErrors = {}
+
+    if (!form.email || !validateEmail(form.email.trim())) {
+      nextErrors.email = 'Vui lòng nhập email hợp lệ'
+    }
+    if (!form.password || form.password.trim().length === 0) {
+      nextErrors.password = 'Vui lòng nhập mật khẩu'
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors)
+      return
+    }
+
+    setErrors({})
+    setErrorMessage(null)
+    setIsSubmitting(true)
+    import('../lib/api').then(({ default: api }) => {
+      api.login({ email: form.email, password: form.password })
+        .then(() => {
+          setIsSubmitting(false)
+          navigate('/')
+        })
+        .catch((err) => {
+          const fieldErrors = err?.response?.data?.errors || {}
+          if (Object.keys(fieldErrors).length > 0) {
+            setErrors(Object.fromEntries(
+              Object.entries(fieldErrors).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])
+            ))
+            setErrorMessage(null)
+          } else {
+            const msg = err?.response?.data?.message || err?.response?.data?.error || 'Lỗi khi đăng nhập'
+            setErrorMessage(msg)
+          }
+          setIsSubmitting(false)
+        })
+    })
   };
 
   return (
@@ -36,30 +76,40 @@ export default function LoginPage() {
               onSubmit={handleSubmit}
               style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
             >
-              <InputField
-                id="email"
-                label="Địa chỉ Email"
-                type="email"
-                placeholder="email@tramspace.com"
-                icon="mail"
-                value={form.email}
-                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                required
-                variant="login"
-              />
-              <InputField
-                id="password"
-                label="Mật khẩu"
-                type="password"
-                placeholder="••••••••"
-                icon="lock"
-                value={form.password}
-                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-                required
-                variant="login"
-              />
+              <div className="input-group">
+                <InputField
+                  id="email"
+                  label="Địa chỉ Email"
+                  type="email"
+                  placeholder="email@tramspace.com"
+                  icon="mail"
+                  value={form.email}
+                  onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                  required
+                  variant="login"
+                />
+                {errors.email && (
+                  <div style={{ color: '#b91c1c', marginTop: 4 }}>{errors.email}</div>
+                )}
+              </div>
 
-              {/* Remember me & Forgot */}
+              <div className="input-group">
+                <InputField
+                  id="password"
+                  label="Mật khẩu"
+                  type="password"
+                  placeholder="••••••••"
+                  icon="lock"
+                  value={form.password}
+                  onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                  required
+                  variant="login"
+                />
+                {errors.password && (
+                  <div style={{ color: '#b91c1c', marginTop: 4 }}>{errors.password}</div>
+                )}
+              </div>
+
               <div className="login-options">
                 <label className="remember-label">
                   <input
@@ -72,9 +122,13 @@ export default function LoginPage() {
                 <a className="forgot-link" href="#">Quên mật khẩu?</a>
               </div>
 
-              <button type="submit" className="btn-primary">
-                Đăng nhập
+              <button type="submit" className="btn-primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
               </button>
+
+              {errorMessage && (
+                <div style={{ color: '#b91c1c', marginTop: 8 }}>{errorMessage}</div>
+              )}
             </form>
 
             {/* Social */}

@@ -7,7 +7,9 @@ export const errorHandler = (err, req, res, next) => {
 
     res.status(status).json({
         success: false,
-        error: err.message || 'Internal Server Error',
+        message: err.message || 'Lỗi máy chủ',
+        error: err.message || 'Lỗi máy chủ',
+        ...(err.errors ? { errors: err.errors } : {}),
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
 }

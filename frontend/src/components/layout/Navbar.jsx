@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import api from '../../lib/api.js';
 
 /* ─── Navigation items ─────────────────────────────────────────── */
 const NAV_ITEMS = [
@@ -10,17 +11,34 @@ const NAV_ITEMS = [
   { to: '/events',    icon: 'event',         iconFill: 'event',         label: 'Sự kiện'    },
 ];
 
-const DROPDOWN_ITEMS = [
-  { icon: 'person',   label: 'Trang cá nhân', to: '/profile'  },
-  { icon: 'settings', label: 'Cài đặt',       to: '/settings' },
-];
+const getInitials = (name) => {
+  if (!name) return '??'
+  const parts = name.trim().split(/\s+/)
+  return parts.length === 1
+    ? parts[0].slice(0, 2).toUpperCase()
+    : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 /* ─── Navbar Component ─────────────────────────────────────────── */
 export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchValue,  setSearchValue]  = useState('');
+  const [user, setUser] = useState(null);
   const dropdownRef = useRef(null);
   const navigate    = useNavigate();
+
+  /* Fetch current user on mount */
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await api.getMe();
+        setUser(userData);
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      }
+    };
+    fetchUser();
+  }, []);
 
   /* Close dropdown on outside click */
   useEffect(() => {
@@ -36,6 +54,14 @@ export default function Navbar() {
   const handleLogout = () => {
     setDropdownOpen(false);
     navigate('/login');
+  };
+
+  const handleProfileClick = (event) => {
+    event?.stopPropagation();
+    if (user?.id) {
+      navigate(`/profile/${user.id}`);
+      setDropdownOpen(false);
+    }
   };
 
   return (
@@ -101,8 +127,8 @@ export default function Navbar() {
             aria-label="Menu tài khoản"
           >
             <div className="navbar-avatar-img">
-              {/* Placeholder initials */}
-              <span>MT</span>
+              {/* Dynamic user initials */}
+              <span>{getInitials(user?.displayName || user?.email)}</span>
             </div>
             <span className="material-symbols-outlined navbar-avatar-chevron">
               expand_more
@@ -115,27 +141,33 @@ export default function Navbar() {
               {/* User info */}
               <div className="navbar-dropdown-user">
                 <div className="navbar-dropdown-avatar">
-                  <span>MT</span>
+                  <span>{getInitials(user?.displayName || user?.email)}</span>
                 </div>
                 <div>
-                  <p className="navbar-dropdown-name">Minh Tú</p>
-                  <p className="navbar-dropdown-email">mintu@tramspace.com</p>
+                  <p className="navbar-dropdown-name">{user?.displayName || user?.email || 'Người dùng'}</p>
+                  <p className="navbar-dropdown-email">{user?.email || 'Email'}</p>
                 </div>
               </div>
 
               <div className="navbar-dropdown-divider" />
 
-              {DROPDOWN_ITEMS.map(({ icon, label, to }) => (
-                <button
-                  key={to}
-                  className="navbar-dropdown-item"
-                  role="menuitem"
-                  onClick={() => { navigate(to); setDropdownOpen(false); }}
-                >
-                  <span className="material-symbols-outlined">{icon}</span>
-                  {label}
-                </button>
-              ))}
+              <button
+                className="navbar-dropdown-item"
+                role="menuitem"
+                onClick={handleProfileClick}
+              >
+                <span className="material-symbols-outlined">person</span>
+                Trang cá nhân
+              </button>
+
+              <button
+                className="navbar-dropdown-item"
+                role="menuitem"
+                onClick={() => { navigate('/settings'); setDropdownOpen(false); }}
+              >
+                <span className="material-symbols-outlined">settings</span>
+                Cài đặt
+              </button>
 
               <div className="navbar-dropdown-divider" />
 

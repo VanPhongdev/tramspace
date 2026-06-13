@@ -1,4 +1,5 @@
 import * as authService from './auth.service.js'
+import * as userService from '../user/user.service.js'
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -9,7 +10,8 @@ const COOKIE_OPTS = {
 
 export const registerHandler = async (req, res, next) => {
   try {
-    const user = await authService.register(req.body)
+    const { email, password, displayName, gender, dateOfBirth } = req.body
+    const user = await authService.register({ email, password, displayName, gender, dateOfBirth })
     res.status(201).json({ success: true, data: user })
   } catch (err) { next(err) }
 }
@@ -36,5 +38,13 @@ export const logoutHandler = async (req, res, next) => {
     await authService.logout(req.user.userId)
     res.clearCookie('refreshToken')
     res.json({ success: true })
+  } catch (err) { next(err) }
+}
+
+// GET /api/auth/me — trả về thông tin user hiện tại (yêu cầu authenticate middleware)
+export const meHandler = async (req, res, next) => {
+  try {
+    const user = await userService.getUserById(req.user.userId)
+    res.json({ success: true, data: user })
   } catch (err) { next(err) }
 }

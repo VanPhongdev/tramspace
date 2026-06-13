@@ -1,16 +1,10 @@
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import StoryStrip from '../components/home/StoryStrip';
 import CreatePost from '../components/home/CreatePost';
 import FeedPost   from '../components/home/FeedPost';
 
-import {
-  currentUser,
-  stories,
-  feedPosts,
-  trendingTopics,
-  suggestions,
-  onlineFriends,
-} from '../data/mockData';
+import api from '../lib/api';
 
 /* ─── Left sidebar nav items ────────────────────────────────────── */
 const sidebarNav = [
@@ -22,10 +16,57 @@ const sidebarNav = [
 ];
 
 export default function HomePage() {
+  const navigate = useNavigate()
+  const [homeData, setHomeData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    api.getHome()
+      .then((home) => {
+        if (!active) return
+        setHomeData(home)
+      })
+      .catch((err) => {
+        const msg = err?.response?.data?.message || err?.response?.data?.error || 'Không thể tải dữ liệu trang chủ'
+        setError(msg)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => { active = false }
+  }, [])
+
   const handleNewPost = (content) => {
-    console.log('New post:', content);
-    // TODO: POST /api/posts
-  };
+    console.log('New post:', content)
+  }
+
+  if (loading) {
+    return (
+      <div className="home-layout">
+        <div className="home-loading">Đang tải trang chủ...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="home-layout">
+        <div className="home-error">{error}</div>
+      </div>
+    )
+  }
+
+  const {
+    currentUser = {},
+    stories = [],
+    feedPosts = [],
+    trendingTopics = [],
+    suggestions = [],
+    onlineFriends = [],
+  } = homeData || {}
 
   return (
     <div className="home-layout">
@@ -36,12 +77,15 @@ export default function HomePage() {
         {/* User mini card */}
         <div className="user-mini-card">
           <div className="user-mini-top">
-            <div
+            <button
+              type="button"
               className="user-mini-avatar"
-              style={{ background: currentUser.avatarColor }}
+              style={{ background: currentUser.avatarColor ?? '#006b5f' }}
+              onClick={() => navigate(`/profile/${currentUser.id}`)}
+              aria-label="Xem trang cá nhân"
             >
-              <span>{currentUser.initials}</span>
-            </div>
+              <span>{currentUser.initials ?? 'US'}</span>
+            </button>
             <div>
               <p className="user-mini-name">{currentUser.name}</p>
               <p className="user-mini-username">{currentUser.username}</p>
@@ -87,10 +131,10 @@ export default function HomePage() {
             <span className="material-symbols-outlined">settings</span>
             <span>Cài đặt</span>
           </NavLink>
-          <a href="#" className="sidebar-nav-sm">
+          <button type="button" className="sidebar-nav-sm">
             <span className="material-symbols-outlined">shield</span>
             <span>Quyền riêng tư</span>
-          </a>
+          </button>
         </div>
       </aside>
 
@@ -100,11 +144,11 @@ export default function HomePage() {
         <StoryStrip stories={stories} />
 
         {/* Create post */}
-        <CreatePost onSubmit={handleNewPost} />
+        <CreatePost currentUser={currentUser} onSubmit={handleNewPost} />
 
         {/* Feed — từ /api/feed */}
         <div className="feed-list">
-          {feedPosts.map((post) => (
+          {feedPosts?.map((post) => (
             <FeedPost key={post.id} post={post} />
           ))}
         </div>
@@ -117,7 +161,7 @@ export default function HomePage() {
         <div className="sidebar-card">
           <h3 className="sidebar-card-title">Xu hướng cho bạn</h3>
           <div className="trending-list">
-            {trendingTopics.map((t) => (
+            {trendingTopics?.map((t) => (
               <button key={t.id} className="trending-item">
                 <div className="trending-meta">
                   <span>{t.category}</span>
@@ -135,7 +179,7 @@ export default function HomePage() {
         <div className="sidebar-card">
           <h3 className="sidebar-card-title">Gợi ý</h3>
           <div className="suggest-list">
-            {suggestions.map((s) => (
+            {suggestions?.map((s) => (
               <div key={s.id} className="suggest-item">
                 <div className="suggest-info">
                   <div
@@ -152,7 +196,6 @@ export default function HomePage() {
                 <button
                   className="btn-follow"
                   onClick={() => console.log('Follow', s.id)}
-                  // TODO: POST /api/users/:id/follow
                 >
                   Theo dõi
                 </button>
@@ -168,7 +211,7 @@ export default function HomePage() {
             <span className="online-badge">{onlineFriends.length} đang trực tuyến</span>
           </div>
           <div className="online-list">
-            {onlineFriends.map((f) => (
+            {onlineFriends?.map((f) => (
               <button key={f.id} className="online-item">
                 <div className="online-avatar-wrap">
                   <div

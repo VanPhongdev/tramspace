@@ -5,18 +5,20 @@ import { useState } from 'react';
  * Props: post (object), showPinned (bool), compact (bool)
  */
 export default function FeedPost({ post, showPinned = false }) {
-  const [liked,   setLiked]   = useState(post.liked   ?? false);
-  const [saved,   setSaved]   = useState(post.saved   ?? false);
-  const [likeCount, setLikeCount] = useState(post.likes);
+  const [liked, setLiked] = useState(post.liked ?? false);
+  const [saved, setSaved] = useState(post.saved ?? false);
+  const [likeCount, setLikeCount] = useState(post.likes ?? 0);
 
   const toggleLike = () => {
-    setLiked(v => !v);
-    // TODO: POST /api/posts/:id/like
+    setLiked((currentLiked) => {
+      const nextLiked = !currentLiked;
+      setLikeCount((count) => count + (nextLiked ? 1 : -1));
+      return nextLiked;
+    });
   };
 
   const toggleSave = () => {
-    setSaved(v => !v);
-    // TODO: POST /api/posts/:id/save
+    setSaved((currentSaved) => !currentSaved);
   };
 
   return (

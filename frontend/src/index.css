@@ -1209,6 +1209,7 @@ body {
   color: #fff;
   font-size: 16px;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .user-mini-name {
@@ -1303,6 +1304,8 @@ body {
   font-size: 13px;
   opacity: 0.7;
   transition: opacity 0.15s, background 0.15s;
+  background: none;
+  border: none;
 }
 
 .sidebar-nav-sm:hover {
