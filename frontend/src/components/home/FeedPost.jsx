@@ -76,14 +76,30 @@ export default function FeedPost({ post, showPinned = false }) {
         <p>{post.content}</p>
       </div>
 
-      {/* Image */}
-      {post.hasImage && (
-        <div
-          className="feed-post-image"
-          style={{ aspectRatio: post.imageAspect ?? '16/9', background: post.imageColor }}
-          aria-label="Ảnh bài viết"
-        />
-      )}
+      {/* Images grid */}
+      {post.hasImage && post.images?.length > 0 && (() => {
+        const imgs = post.images
+        const total = imgs.length
+        const shown = Math.min(total, 4)
+        const gridMod = total === 1 ? 'fp-images-1'
+          : total === 2 ? 'fp-images-2'
+          : total === 3 ? 'fp-images-3'
+          : 'fp-images-4'
+
+        return (
+          <div className={`fp-images ${gridMod}`}>
+            {imgs.slice(0, shown).map((url, idx) => (
+              <div key={idx} className="fp-image-cell">
+                <img src={url} alt={`Ảnh ${idx + 1}`} />
+                {/* Overlay "+N" trên ô cuối nếu còn ảnh nữa */}
+                {idx === shown - 1 && total > shown && (
+                  <div className="fp-image-more">+{total - shown}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      })()}
 
       {/* Actions */}
       <div className="feed-post-actions">

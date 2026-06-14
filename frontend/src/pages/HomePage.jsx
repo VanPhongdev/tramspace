@@ -20,6 +20,7 @@ export default function HomePage() {
   const [homeData, setHomeData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -39,8 +40,18 @@ export default function HomePage() {
     return () => { active = false }
   }, [])
 
-  const handleNewPost = (content) => {
-    console.log('New post:', content)
+  const handleNewPost = async (content, imageFiles) => {
+    setError(null)
+    try {
+      const newPost = await api.createPost(content, imageFiles)
+      setHomeData((prev) => ({
+        ...prev,
+        feedPosts: [newPost, ...(prev?.feedPosts ?? [])],
+      }))
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Không thể đăng bài'
+      setError(msg)
+    }
   }
 
   if (loading) {
@@ -143,8 +154,47 @@ export default function HomePage() {
         {/* Stories — từ /api/stories/feed */}
         <StoryStrip stories={stories} />
 
-        {/* Create post */}
-        <CreatePost currentUser={currentUser} onSubmit={handleNewPost} />
+        {/* Trigger card — click để mở modal */}
+        <div className="create-post-trigger">
+          <div className="cpt-top">
+            <div
+              className="feed-avatar"
+              style={{ background: currentUser.avatarColor ?? '#006b5f', flexShrink: 0 }}
+            >
+              <span>{currentUser.initials ?? 'US'}</span>
+            </div>
+            <button
+              className="cpt-input-btn"
+              onClick={() => setIsModalOpen(true)}
+              aria-label="Tạo bài viết"
+            >
+              {currentUser.name} ơi, bạn đang nghĩ gì thế?
+            </button>
+          </div>
+          <div className="cpt-divider" />
+          <div className="cpt-actions">
+            <button className="cpt-action" onClick={() => setIsModalOpen(true)}>
+              <span className="material-symbols-outlined" style={{ color: '#45bd62' }}>image</span>
+              Ảnh/Video
+            </button>
+            <button className="cpt-action" onClick={() => setIsModalOpen(true)}>
+              <span className="material-symbols-outlined" style={{ color: '#f7b928' }}>mood</span>
+              Cảm xúc
+            </button>
+            <button className="cpt-action" onClick={() => setIsModalOpen(true)}>
+              <span className="material-symbols-outlined" style={{ color: '#f5533d' }}>location_on</span>
+              Check in
+            </button>
+          </div>
+        </div>
+
+        {/* Modal tạo bài viết */}
+        <CreatePost
+          currentUser={currentUser}
+          onSubmit={handleNewPost}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
 
         {/* Feed — từ /api/feed */}
         <div className="feed-list">

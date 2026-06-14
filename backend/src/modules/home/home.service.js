@@ -71,12 +71,21 @@ export const getHomeData = async (userId) => {
   }
 
   const feedPostsRaw = await prisma.post.findMany({
-    where: { visibility: 'PUBLIC' },
+    where: { visibility: 'PUBLIC', isDeleted: false },
     orderBy: { createdAt: 'desc' },
     take: 12,
     include: {
-      user: true,
-      media: true,
+      user: {
+        select: {
+          id: true,
+          displayName: true,
+          email: true,
+          postsCount: true,
+        },
+      },
+      media: {
+        orderBy: { displayOrder: 'asc' },
+      },
     },
   })
 
@@ -93,11 +102,12 @@ export const getHomeData = async (userId) => {
     location: null,
     content: post.content || '',
     hasImage: Array.isArray(post.media) && post.media.length > 0,
+    images: post.media.map((m) => m.imageUrl),
     imageAspect: '16/9',
     imageColor: getColorFromId(post.id),
     liked: false,
     likes: formatCount(post.likeCount ?? 0),
-    comments: post.commentsCount ?? 0,
+    comments: post.commentCount ?? 0,
     shares: 0,
     saved: false,
   }))

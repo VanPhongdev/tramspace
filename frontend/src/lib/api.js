@@ -84,10 +84,23 @@ export default {
   refresh: () => api.post('/api/auth/refresh').then((r) => r.data),
   logout: () => api.post('/api/auth/logout').then((r) => { setAccessToken(null); return r.data }),
   getMe: () => api.get('/api/auth/me').then((r) => r.data?.data),
-  getHome: () => api.get('/api/home').then((r) => r.data?.data),  getUser: (userId) => api.get(`/api/users/${userId}`).then((r) => r.data?.data),
+  getHome: () => api.get('/api/home').then((r) => r.data?.data),
+  getUser: (userId) => api.get(`/api/users/${userId}`).then((r) => r.data?.data),
   getUserPosts: (userId, limit = 10, offset = 0) =>
     api.get(`/api/posts/users/${userId}/posts`, { params: { limit, offset } }).then((r) => r.data?.data),
-  createPost: (content, visibility = 'PUBLIC') =>
-    api.post('/api/posts', { content, visibility }).then((r) => r.data?.data),  // raw axios instance if needed
+  createPost: (content, imageFiles = [], visibility = 'PUBLIC') => {
+    const files = Array.isArray(imageFiles) ? imageFiles : imageFiles ? [imageFiles] : []
+
+    if (files.length > 0) {
+      const formData = new FormData()
+      formData.append('content', content)
+      formData.append('visibility', visibility)
+      // Append từng ảnh với cùng field name 'images'
+      files.forEach((file) => formData.append('images', file))
+      return api.post('/api/posts', formData).then((r) => r.data?.data)
+    }
+
+    return api.post('/api/posts', { content, visibility }).then((r) => r.data?.data)
+  },
   _raw: api,
 }

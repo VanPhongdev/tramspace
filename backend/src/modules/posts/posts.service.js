@@ -1,6 +1,55 @@
 import prisma from '../../lib/prisma.js'
+import { v2 as cloudinary } from 'cloudinary'
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 const COLORS = ['#14b8a6', '#6063ee', '#f38764', '#4648d4', '#005048', '#e11d48', '#0f766e', '#4f46e5']
+
+const uploadImageToCloudinary = async (buffer) => {
+  const result = await new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder: 'tramspace/posts', resource_type: 'image' },
+      (err, res) => {
+        if (err) return reject(new Error(err.message || 'Cloudinary upload failed'))
+        resolve(res)
+      },
+    ).end(buffer)
+  })
+  return result
+}
+
+const buildPostResponse = (post) => ({
+  id: post.id,
+  author: {
+    name: post.user?.displayName || post.user?.email || 'Người dùng',
+    initials: getInitials(post.user?.displayName || post.user?.email || 'ND'),
+    color: getColorFromId(post.user?.id || post.id),
+    badge: post.user?.postsCount > 50 ? 'Người sáng tạo' : null,
+    badgeColor: '#6063ee',
+  },
+  time: formatRelativeTime(post.createdAt),
+  location: null,
+  content: post.content || '',
+  hasImage: Array.isArray(post.media) && post.media.length > 0,
+  // Mảng URL tất cả ảnh theo thứ tự displayOrder
+  images: Array.isArray(post.media)
+    ? post.media
+        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+        .map((m) => m.imageUrl)
+    : [],
+  imageAspect: '16/9',
+  imageColor: getColorFromId(post.id),
+  liked: false,
+  likes: formatCount(post.likeCount ?? 0),
+  comments: post.commentCount ?? 0,
+  shares: 0,
+  saved: false,
+  pinned: false,
+})
 
 const getInitials = (name) => {
   if (!name) return '??'
@@ -13,7 +62,7 @@ const getInitials = (name) => {
 const getColorFromId = (id) => {
   let hash = 0
   for (let i = 0; i < id.length; i += 1) {
-    hash = (hash * 31 + id.charCodeAt(i)) % COLORS.length
+    hash = (hash * 31 + id.codePointAt(i)) % COLORS.length
   }
   return COLORS[hash]
 }
@@ -57,28 +106,7 @@ export const getUserPosts = async (userId, limit = 10, offset = 0) => {
     },
   })
 
-  return posts.map((post) => ({
-    id: post.id,
-    author: {
-      name: post.user?.displayName || post.user?.email || 'Người dùng',
-      initials: getInitials(post.user?.displayName || post.user?.email || 'ND'),
-      color: getColorFromId(post.user?.id || post.id),
-      badge: post.user?.postsCount > 50 ? 'Người sáng tạo' : null,
-      badgeColor: '#6063ee',
-    },
-    time: formatRelativeTime(post.createdAt),
-    location: null,
-    content: post.content || '',
-    hasImage: Array.isArray(post.media) && post.media.length > 0,
-    imageAspect: '16/9',
-    imageColor: getColorFromId(post.id),
-    liked: false,
-    likes: formatCount(post.likeCount ?? 0),
-    comments: post.commentsCount ?? 0,
-    shares: 0,
-    saved: false,
-    pinned: false,
-  }))
+  return posts.map(buildPostResponse)
 }
 
 export const getPost = async (postId) => {
@@ -97,39 +125,19 @@ export const getPost = async (postId) => {
     },
   })
 
-  if (!post) throw { status: 404, message: 'Không tìm thấy bài viết' }
+  if (!post) throw new Error('Không tìm thấy bài viết')
 
-  return {
-    id: post.id,
-    author: {
-      name: post.user?.displayName || post.user?.email || 'Người dùng',
-      initials: getInitials(post.user?.displayName || post.user?.email || 'ND'),
-      color: getColorFromId(post.user?.id || post.id),
-      badge: post.user?.postsCount > 50 ? 'Người sáng tạo' : null,
-      badgeColor: '#6063ee',
-    },
-    time: formatRelativeTime(post.createdAt),
-    location: null,
-    content: post.content || '',
-    hasImage: Array.isArray(post.media) && post.media.length > 0,
-    imageAspect: '16/9',
-    imageColor: getColorFromId(post.id),
-    liked: false,
-    likes: formatCount(post.likeCount ?? 0),
-    comments: post.commentsCount ?? 0,
-    shares: 0,
-    saved: false,
-    pinned: false,
-  }
+  return buildPostResponse(post)
 }
 
-export const createPost = async (userId, { content, visibility = 'PUBLIC' }) => {
-  const post = await prisma.post.create({
-    data: {
-      userId,
-      content,
-      visibility,
-    },
+export const createPost = async (userId, { content, visibility = 'PUBLIC' }, files) => {
+  // files có thể là mảng (upload.array) hoặc một file hoặc rỗng
+  const fileArray = Array.isArray(files) ? files : files ? [files] : []
+
+  const postData = { userId, content, visibility }
+
+  const createData = {
+    data: postData,
     include: {
       user: {
         select: {
@@ -141,28 +149,31 @@ export const createPost = async (userId, { content, visibility = 'PUBLIC' }) => 
       },
       media: true,
     },
-  })
-
-  return {
-    id: post.id,
-    author: {
-      name: post.user?.displayName || post.user?.email || 'Người dùng',
-      initials: getInitials(post.user?.displayName || post.user?.email || 'ND'),
-      color: getColorFromId(post.user?.id || post.id),
-      badge: post.user?.postsCount > 50 ? 'Người sáng tạo' : null,
-      badgeColor: '#6063ee',
-    },
-    time: formatRelativeTime(post.createdAt),
-    location: null,
-    content: post.content || '',
-    hasImage: Array.isArray(post.media) && post.media.length > 0,
-    imageAspect: '16/9',
-    imageColor: getColorFromId(post.id),
-    liked: false,
-    likes: formatCount(post.likeCount ?? 0),
-    comments: post.commentsCount ?? 0,
-    shares: 0,
-    saved: false,
-    pinned: false,
   }
+
+  if (fileArray.length > 0) {
+    // Upload song song tất cả ảnh lên Cloudinary
+    const uploadResults = await Promise.all(
+      fileArray.map((file) => uploadImageToCloudinary(file.buffer))
+    )
+
+    createData.data.media = {
+      create: uploadResults.map((result, index) => ({
+        imageUrl: result.secure_url,
+        cloudinaryPublicId: result.public_id,
+        displayOrder: index,
+      })),
+    }
+  }
+
+  const post = await prisma.$transaction(async (tx) => {
+    const created = await tx.post.create(createData)
+    // Tăng postsCount của user sau khi tạo bài thành công
+    await tx.user.update({
+      where: { id: userId },
+      data: { postsCount: { increment: 1 } },
+    })
+    return created
+  })
+  return buildPostResponse(post)
 }

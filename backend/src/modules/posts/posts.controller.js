@@ -26,7 +26,8 @@ export const getPostHandler = async (req, res, next) => {
 export const createPostHandler = async (req, res, next) => {
   try {
     // req.user.userId được set bởi authenticate middleware
-    const post = await postsService.createPost(req.user.userId, req.body)
+    // req.files là mảng file từ upload.array('images', 10)
+    const post = await postsService.createPost(req.user.userId, req.body, req.files ?? [])
     res.json({ success: true, data: post })
   } catch (err) {
     next(err)
