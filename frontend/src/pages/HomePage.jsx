@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import StoryStrip from '../components/home/StoryStrip';
 import CreatePost from '../components/home/CreatePost';
-import FeedPost   from '../components/home/FeedPost';
+import FeedPost from '../components/home/FeedPost';
 
 import api from '../lib/api';
 
 /* ─── Left sidebar nav items ────────────────────────────────────── */
 const sidebarNav = [
-  { to: '/',          icon: 'home',     label: 'Trang chủ',  exact: true },
-  { to: '/explore',   icon: 'explore',  label: 'Khám phá'               },
-  { to: '/community', icon: 'groups',   label: 'Cộng đồng'              },
-  { to: '/saved',     icon: 'bookmark', label: 'Đã lưu'                 },
-  { to: '/events',    icon: 'event',    label: 'Sự kiện'                },
+  { to: '/', icon: 'home', label: 'Trang chủ', exact: true },
+  { to: '/explore', icon: 'explore', label: 'Khám phá' },
+  { to: '/community', icon: 'groups', label: 'Cộng đồng' },
+  { to: '/saved', icon: 'bookmark', label: 'Đã lưu' },
+  { to: '/events', icon: 'event', label: 'Sự kiện' },
 ];
 
 export default function HomePage() {
@@ -21,6 +21,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [initialFiles, setInitialFiles] = useState([])
+  const quickFileRef = useRef(null)
 
   useEffect(() => {
     let active = true
@@ -39,6 +41,15 @@ export default function HomePage() {
       })
     return () => { active = false }
   }, [])
+
+  /* Chọn ảnh nhanh từ nút Ảnh/Video -> mở modal với ảnh đã chọn */
+  const handleQuickImageSelect = (e) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setInitialFiles(files);
+    setIsModalOpen(true);
+    e.target.value = '';
+  };
 
   const handleNewPost = async (content, imageFiles) => {
     setError(null)
@@ -92,14 +103,14 @@ export default function HomePage() {
               type="button"
               className="user-mini-avatar"
               style={{ background: currentUser.avatarColor ?? '#006b5f' }}
-              onClick={() => navigate(`/profile/${currentUser.id}`)}
+              onClick={() => navigate(`/profile/${currentUser.username ?? currentUser.id}`)}
               aria-label="Xem trang cá nhân"
             >
               <span>{currentUser.initials ?? 'US'}</span>
             </button>
             <div>
               <p className="user-mini-name">{currentUser.name}</p>
-              <p className="user-mini-username">{currentUser.username}</p>
+              <p className="user-mini-username">{currentUser.username ? `@${currentUser.username}` : ''}</p>
             </div>
           </div>
           <div className="user-mini-stats">
@@ -173,15 +184,24 @@ export default function HomePage() {
           </div>
           <div className="cpt-divider" />
           <div className="cpt-actions">
-            <button className="cpt-action" onClick={() => setIsModalOpen(true)}>
+            {/* File input ẩn để chọn ảnh nhanh */}
+            <input
+              ref={quickFileRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleQuickImageSelect}
+            />
+            <button className="cpt-action" onClick={() => quickFileRef.current?.click()}>
               <span className="material-symbols-outlined" style={{ color: '#45bd62' }}>image</span>
               Ảnh/Video
             </button>
-            <button className="cpt-action" onClick={() => setIsModalOpen(true)}>
+            <button className="cpt-action">
               <span className="material-symbols-outlined" style={{ color: '#f7b928' }}>mood</span>
               Cảm xúc
             </button>
-            <button className="cpt-action" onClick={() => setIsModalOpen(true)}>
+            <button className="cpt-action">
               <span className="material-symbols-outlined" style={{ color: '#f5533d' }}>location_on</span>
               Check in
             </button>
@@ -193,7 +213,8 @@ export default function HomePage() {
           currentUser={currentUser}
           onSubmit={handleNewPost}
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          initialFiles={initialFiles}
+          onClose={() => { setIsModalOpen(false); setInitialFiles([]); }}
         />
 
         {/* Feed — từ /api/feed */}

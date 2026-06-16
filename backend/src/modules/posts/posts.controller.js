@@ -1,14 +1,32 @@
 import * as postsService from './posts.service.js'
+import prisma from '../../lib/prisma.js'
+
+// UUID regex — phân biệt handle là UUID hay username
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Resolve handle (UUID hoặc username) → userId thực
+const resolveUserId = async (handle) => {
+  if (UUID_REGEX.test(handle)) return handle
+  // Tìm user theo username
+  const user = await prisma.user.findUnique({
+    where: { username: handle },
+    select: { id: true },
+  })
+  if (!user) throw { status: 404, message: 'Không tìm thấy người dùng' }
+  return user.id
+}
 
 export const getUserPostsHandler = async (req, res, next) => {
   try {
-    const { id } = req.params
-    const limit = Math.min(Number.parseInt(req.query.limit, 10) || 10, 100)
+    const handle = req.params.id
+    const limit  = Math.min(Number.parseInt(req.query.limit, 10) || 10, 100)
     const offset = Number.parseInt(req.query.offset, 10) || 0
 
-    const posts = await postsService.getUserPosts(id, limit, offset)
+    const userId = await resolveUserId(handle)
+    const posts  = await postsService.getUserPosts(userId, limit, offset)
     res.json({ success: true, data: posts })
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ success: false, message: err.message })
     next(err)
   }
 }

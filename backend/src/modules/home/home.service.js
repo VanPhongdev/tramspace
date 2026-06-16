@@ -52,6 +52,7 @@ export const getHomeData = async (userId) => {
       id: true,
       email: true,
       displayName: true,
+      username: true,
       followersCount: true,
       followingCount: true,
       postsCount: true,
@@ -63,7 +64,7 @@ export const getHomeData = async (userId) => {
   const currentUser = {
     id: user.id,
     name: user.displayName || user.email,
-    username: normalizeUsername(user.displayName, user.email),
+    username: user.username ?? null,   // null nếu chưa đặt, string nếu đã đặt
     initials: getInitials(user.displayName || user.email),
     avatarColor: getColorFromId(user.id),
     following: formatCount(user.followingCount ?? 0),

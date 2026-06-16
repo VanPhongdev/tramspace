@@ -17,6 +17,8 @@ model User {
   bio              String?
   gender           Int?            @db.SmallInt
   dateOfBirth      DateTime?       @map("date_of_birth") @db.Date
+  username         String?         @unique @db.VarChar(30)
+  usernameUpdatedAt DateTime?      @map("username_updated_at") @db.Timestamp(6)
   isEmailVerified  Boolean?        @default(false) @map("is_email_verified")
   status           String?         @default("ACTIVE") @db.VarChar(20)
   followersCount   Int?            @default(0) @map("followers_count")

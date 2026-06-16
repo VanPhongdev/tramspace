@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import FeedPost from '../components/home/FeedPost';
+import EditProfileModal from '../components/profile/EditProfileModal';
 import api from '../lib/api';
 
 const TABS = ['Bài viết', 'Ảnh', 'Video', 'Đã lưu', 'Giới thiệu', 'Bạn bè'];
@@ -23,19 +24,23 @@ const getInitials = (name) => {
 }
 
 export default function ProfilePage() {
-  const { userId } = useParams()
+  const { handle } = useParams()
+  const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('Bài viết')
+  const [isEditOpen, setIsEditOpen] = useState(false)
 
   useEffect(() => {
     let active = true
+    setLoading(true)
+    setError(null)
 
     Promise.all([
-      api.getUser(userId),
-      api.getUserPosts(userId),
+      api.getUser(handle),
+      api.getUserPosts(handle),
     ])
       .then(([userData, postsData]) => {
         if (!active) return
@@ -46,13 +51,23 @@ export default function ProfilePage() {
       .catch((err) => {
         const msg = err?.response?.data?.message || err?.response?.data?.error || 'Không thể tải dữ liệu'
         setError(msg)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
+        setLoading(false)
       })
 
     return () => { active = false }
-  }, [userId])
+  }, [handle])
+
+  /* Sau khi cập nhật profile thành công, nếu username thay đổi thì redirect */
+  const handleProfileUpdated = (updatedUser) => {
+    setUser(updatedUser)
+    setIsEditOpen(false)
+    // Nếu handle hiện tại là UUID và user vừa đặt username → redirect sang /profile/username
+    // Hoặc username thay đổi so với handle hiện tại
+    const newHandle = updatedUser.username ?? updatedUser.id
+    if (newHandle !== handle) {
+      navigate(`/profile/${newHandle}`, { replace: true })
+    }
+  }
 
   if (loading) {
     return (
@@ -76,7 +91,7 @@ export default function ProfilePage() {
 
   const profileData = {
     name: user.displayName || user.email,
-    username: `@${(user.displayName || user.email).toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+    username: user.username ? `@${user.username}` : null,
     role: 'Người dùng',
     avatarColor: getColorFromId(user.id),
     coverColor: getColorFromId(user.id + '_cover'),
@@ -96,17 +111,17 @@ export default function ProfilePage() {
     isOnline: false,
   }
 
-  const user_rendered = profileData
+  const u = profileData
 
   return (
     <div className="profile-page">
 
       {/* ══ HERO: Cover + Avatar + Info ══════════════════════════ */}
       <section className="profile-hero">
-        {/* Cover photo — từ /api/users/:id */}
+        {/* Cover photo */}
         <div
           className="profile-cover"
-          style={{ background: user_rendered.coverColor }}
+          style={{ background: u.coverColor }}
           aria-label="Ảnh bìa"
         />
 
@@ -115,11 +130,11 @@ export default function ProfilePage() {
           <div className="profile-avatar-wrap">
             <div
               className="profile-avatar"
-              style={{ background: user_rendered.avatarColor }}
+              style={{ background: u.avatarColor }}
             >
-              <span>{user_rendered.initials}</span>
+              <span>{u.initials}</span>
             </div>
-            {user_rendered.isOnline && (
+            {u.isOnline && (
               <span className="profile-online-dot" aria-label="Đang trực tuyến" />
             )}
           </div>
@@ -127,17 +142,22 @@ export default function ProfilePage() {
           {/* Name + Actions */}
           <div className="profile-info-row">
             <div>
-              <h1 className="profile-name">{user_rendered.name}</h1>
+              <h1 className="profile-name">{u.name}</h1>
               <p className="profile-username">
-                {user_rendered.username} •{' '}
-                <span className="profile-role">{user_rendered.role}</span>
+                {u.username ? (
+                  <>{u.username} • <span className="profile-role">{u.role}</span></>
+                ) : (
+                  <span className="profile-role">{u.role}</span>
+                )}
               </p>
             </div>
             <div className="profile-actions">
-              <button className="btn-primary profile-edit-btn">
+              <button
+                className="btn-primary profile-edit-btn"
+                onClick={() => setIsEditOpen(true)}
+              >
                 <span className="material-symbols-outlined">edit</span>
-              {' '}
-                Chỉnh sửa
+                {' '}Chỉnh sửa
               </button>
               <button className="icon-btn" aria-label="Chia sẻ">
                 <span className="material-symbols-outlined">share</span>
@@ -156,19 +176,19 @@ export default function ProfilePage() {
         {/* ── LEFT: About + Photos ─────────────────────────────── */}
         <aside className="profile-aside">
 
-          {/* About card — từ /api/users/:id */}
+          {/* About card */}
           <div className="profile-about-card">
             <h3 className="profile-card-title">Giới thiệu</h3>
-            <p className="profile-bio">{user_rendered.bio}</p>
+            <p className="profile-bio">{u.bio}</p>
 
             <div className="profile-details">
               {[
-                { icon: 'location_on', text: user_rendered.location },
-                { icon: 'link',        text: user_rendered.website,  link: true },
-                { icon: 'calendar_month', text: `Tham gia ${user_rendered.joinDate}` },
-                { icon: 'work',        text: user_rendered.work },
-                { icon: 'school',      text: user_rendered.education },
-              ].map(({ icon, text, link }) => (
+                { icon: 'location_on', text: u.location },
+                { icon: 'link',        text: u.website,  link: true },
+                { icon: 'calendar_month', text: `Tham gia ${u.joinDate}` },
+                { icon: 'work',        text: u.work },
+                { icon: 'school',      text: u.education },
+              ].filter(({ text }) => text).map(({ icon, text, link }) => (
                 <div key={icon} className="profile-detail-item">
                   <span className="material-symbols-outlined profile-detail-icon">{icon}</span>
                   {link ? (
@@ -182,13 +202,13 @@ export default function ProfilePage() {
               ))}
             </div>
 
-            {/* Stats grid — từ /api/users/:id */}
+            {/* Stats grid */}
             <div className="profile-stats-grid">
               {Object.entries({
-                'Bài viết':      user_rendered.stats.posts,
-                'Follower':      user_rendered.stats.followers,
-                'Following':     user_rendered.stats.following,
-                'Thích':         user_rendered.stats.likes,
+                'Bài viết':  u.stats.posts,
+                'Follower':  u.stats.followers,
+                'Following': u.stats.following,
+                'Thích':     u.stats.likes,
               }).map(([label, val]) => (
                 <div key={label} className="profile-stat">
                   <strong>{val}</strong>
@@ -198,7 +218,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Featured photos — từ /api/users/:id/photos?featured=true */}
+          {/* Featured photos */}
           <div className="profile-about-card">
             <div className="profile-card-header">
               <h3 className="profile-card-title">Ảnh nổi bật</h3>
@@ -260,7 +280,6 @@ export default function ProfilePage() {
 
           {activeTab === 'Ảnh' && (
             <div className="profile-photos-tab">
-              {/* Mock photos for now */}
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
                 <button
                   key={i}
@@ -281,6 +300,14 @@ export default function ProfilePage() {
 
         </main>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        currentUser={user}
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onUpdated={handleProfileUpdated}
+      />
     </div>
   );
 }

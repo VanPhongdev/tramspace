@@ -85,7 +85,7 @@ export default {
   logout: () => api.post('/api/auth/logout').then((r) => { setAccessToken(null); return r.data }),
   getMe: () => api.get('/api/auth/me').then((r) => r.data?.data),
   getHome: () => api.get('/api/home').then((r) => r.data?.data),
-  getUser: (userId) => api.get(`/api/users/${userId}`).then((r) => r.data?.data),
+  getUser: (handle) => api.get(`/api/users/${handle}`).then((r) => r.data?.data),
   getUserPosts: (userId, limit = 10, offset = 0) =>
     api.get(`/api/posts/users/${userId}/posts`, { params: { limit, offset } }).then((r) => r.data?.data),
   createPost: (content, imageFiles = [], visibility = 'PUBLIC') => {
@@ -102,5 +102,7 @@ export default {
 
     return api.post('/api/posts', { content, visibility }).then((r) => r.data?.data)
   },
+  updateProfile: (data) => api.patch('/api/users/me', data).then((r) => r.data?.data),
+  updateUsername: (username) => api.patch('/api/users/me/username', { username }).then((r) => r.data),
   _raw: api,
 }

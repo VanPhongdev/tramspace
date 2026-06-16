@@ -9,10 +9,10 @@ export const getMeHandler = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
-// GET /api/users/:id — xem profile bất kỳ theo UUID (không cần auth)
+// GET /api/users/:handle — tìm theo UUID hoặc username
 export const getProfileHandler = async (req, res, next) => {
   try {
-    const user = await userService.getProfile(req.params.id)
+    const user = await userService.getProfileByHandle(req.params.handle)
     res.json({ success: true, data: user })
   } catch (err) { next(err) }
 }
@@ -24,6 +24,24 @@ export const updateProfileHandler = async (req, res, next) => {
     const user = await userService.updateProfile(req.user.userId, req.body)
     res.json({ success: true, data: user })
   } catch (err) { next(err) }
+}
+
+// PATCH /api/users/me/username
+export const updateUsernameHandler = async (req, res, next) => {
+  try {
+    const { username } = req.body
+    const user = await userService.updateUsername(req.user.userId, username)
+    res.json({ success: true, data: user })
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({
+        success: false,
+        message: err.message,
+        ...(err.nextAllowedAt ? { nextAllowedAt: err.nextAllowedAt } : {}),
+      })
+    }
+    next(err)
+  }
 }
 
 // POST /api/users/me/avatar

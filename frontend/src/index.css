@@ -2030,7 +2030,174 @@ body {
   cursor: not-allowed;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   EDIT PROFILE MODAL
+   ═══════════════════════════════════════════════════════════════════ */
+.epm-modal {
+  max-width: 480px;
+}
 
+.epm-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.epm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.epm-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.epm-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--color-surface-container-low);
+  border: 1.5px solid var(--color-outline-variant);
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  color: var(--color-on-surface);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
+}
+
+.epm-input:focus {
+  border-color: var(--color-primary);
+  background: var(--color-surface-container-lowest);
+}
+
+.epm-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.epm-input-error {
+  border-color: #e11d48 !important;
+}
+
+.epm-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.epm-char-count {
+  font-size: 11px;
+  color: var(--color-outline);
+  text-align: right;
+}
+
+/* Username row */
+.epm-username-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--color-surface-container-low);
+  border: 1.5px solid var(--color-outline-variant);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.epm-username-wrap:focus-within {
+  border-color: var(--color-primary);
+}
+
+.epm-username-prefix {
+  padding: 10px 0 10px 14px;
+  font-size: 13px;
+  color: var(--color-outline);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.epm-username-input {
+  flex: 1;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 10px 14px 10px 2px;
+  min-width: 0;
+}
+
+.epm-username-input:focus {
+  border-color: transparent;
+  background: none;
+}
+
+.epm-hint {
+  font-size: 12px;
+  color: var(--color-outline);
+  margin: 0;
+}
+
+.epm-field-error {
+  font-size: 13px;
+  color: #e11d48;
+  margin: 0;
+}
+
+/* Cooldown badge */
+.epm-cooldown-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(247, 185, 40, 0.15);
+  color: #b45309;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* Footer */
+.cp-footer {
+  padding: 8px 16px 16px;
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.epm-cancel-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1.5px solid var(--color-outline-variant);
+  border-radius: 8px;
+  background: none;
+  color: var(--color-on-surface);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.epm-cancel-btn:hover:not(:disabled) {
+  background: var(--color-surface-container-low);
+}
+
+.epm-cancel-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Override cp-submit khi trong epm để chiếm flex 1 */
+.epm-modal .cp-footer .cp-submit {
+  flex: 1;
+  width: auto;
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    FEED POST — IMAGE GRID
@@ -2566,9 +2733,6 @@ body {
   border-bottom: 1px solid var(--color-outline-variant);
   overflow-x: auto;
   scrollbar-width: none;
-  position: sticky;
-  top: 72px;
-  z-index: 10;
 }
 
 .profile-tabs::-webkit-scrollbar {

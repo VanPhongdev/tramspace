@@ -7,7 +7,7 @@ const GRID_SHOW  = 4;   // số ảnh tối đa hiển thị trong grid
  * CreatePost — Modal tạo bài viết phong cách Facebook.
  * Props: currentUser, onSubmit(content, files[]), isOpen, onClose
  */
-export default function CreatePost({ currentUser, onSubmit, isOpen, onClose }) {
+export default function CreatePost({ currentUser, onSubmit, isOpen, onClose, initialFiles = [] }) {
   const [text, setText]               = useState('');
   const [imageFiles, setImageFiles]   = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -18,7 +18,14 @@ export default function CreatePost({ currentUser, onSubmit, isOpen, onClose }) {
 
   /* Auto-focus textarea khi modal mở */
   useEffect(() => {
-    if (isOpen) setTimeout(() => textareaRef.current?.focus(), 80);
+    if (isOpen) {
+      // Nếu được mở kèm ảnh ban đầu, load chúng vào state
+      if (initialFiles.length > 0) {
+        setImageFiles(initialFiles);
+        setImagePreviews(initialFiles.map((f) => URL.createObjectURL(f)));
+      }
+      setTimeout(() => textareaRef.current?.focus(), 80);
+    }
   }, [isOpen]);
 
   /* Đóng bằng Escape */

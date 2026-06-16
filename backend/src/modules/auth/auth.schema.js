@@ -70,3 +70,12 @@ export const updateProfileSchema = z.object({
   { message: 'Cần ít nhất một field để cập nhật' }
   // .refine() là custom validation — chặn request body rỗng {}
 )
+
+// updateUsernameSchema — chỉ cho phép đặt/đổi username
+export const updateUsernameSchema = z.object({
+  username: z.string()
+    .trim()
+    .min(3, 'Username tối thiểu 3 ký tự')
+    .max(30, 'Username tối đa 30 ký tự')
+    .regex(/^[a-zA-Z0-9_.]+$/, 'Username chỉ chứa chữ, số, dấu chấm (.) và gạch dưới (_)'),
+})

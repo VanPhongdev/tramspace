@@ -36,7 +36,7 @@ export default function App() {
           <Route path="/community" element={<PlaceholderPage title="Cộng đồng" />} />
           <Route path="/reels"     element={<PlaceholderPage title="Thước phim" />} />
           <Route path="/events"    element={<PlaceholderPage title="Sự kiện" />} />
-          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/profile/:handle" element={<ProfilePage />} />
           <Route path="/settings"  element={<PlaceholderPage title="Cài đặt" />} />
         </Route>
 

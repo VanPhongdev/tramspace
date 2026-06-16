@@ -59,7 +59,7 @@ export default function Navbar() {
   const handleProfileClick = (event) => {
     event?.stopPropagation();
     if (user?.id) {
-      navigate(`/profile/${user.id}`);
+      navigate(`/profile/${user.username ?? user.id}`);
       setDropdownOpen(false);
     }
   };
@@ -145,7 +145,9 @@ export default function Navbar() {
                 </div>
                 <div>
                   <p className="navbar-dropdown-name">{user?.displayName || user?.email || 'Người dùng'}</p>
-                  <p className="navbar-dropdown-email">{user?.email || 'Email'}</p>
+                  <p className="navbar-dropdown-email">
+                    {user?.username ? `@${user.username}` : user?.email || 'Email'}
+                  </p>
                 </div>
               </div>
 
