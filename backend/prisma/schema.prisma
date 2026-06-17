@@ -15,6 +15,10 @@ model User {
   avatarUrl        String?         @map("avatar_url")
   coverUrl         String?         @map("cover_url")
   bio              String?
+  hometown         String?         @map("hometown") @db.VarChar(150)
+  currentLocation  String?         @map("current_location") @db.VarChar(150)
+  occupation       String?         @db.VarChar(100)
+  major            String?         @db.VarChar(100)
   gender           Int?            @db.SmallInt
   dateOfBirth      DateTime?       @map("date_of_birth") @db.Date
   username         String?         @unique @db.VarChar(30)

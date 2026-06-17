@@ -63,6 +63,10 @@ export const loginSchema = z.object({
 export const updateProfileSchema = z.object({
   displayName: z.string().trim().min(1).max(100).optional(),
   bio: z.string().trim().max(500, 'Bio tối đa 500 ký tự').optional(),
+  hometown: z.string().trim().max(150, 'Quê quán tối đa 150 ký tự').optional(),
+  currentLocation: z.string().trim().max(150, 'Nơi ở hiện tại tối đa 150 ký tự').optional(),
+  occupation: z.string().trim().max(100, 'Nghề nghiệp tối đa 100 ký tự').optional(),
+  major: z.string().trim().max(100, 'Học vấn tối đa 100 ký tự').optional(),
   gender: z.number().int().min(0).max(2).optional(),
   dateOfBirth: z.string().datetime({ offset: true }).optional(),
 }).refine(
