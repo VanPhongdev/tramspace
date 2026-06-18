@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 
-import MainLayout  from './components/layout/MainLayout';
-import LoginPage   from './pages/LoginPage';
+import MainLayout from './components/layout/MainLayout';
+import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import HomePage    from './pages/HomePage';
+import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 
 /* ─── Auth routes với fade+slide transition ───────────────────── */
@@ -13,7 +13,7 @@ function AuthRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/login"    element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Routes>
     </AnimatePresence>
@@ -26,18 +26,18 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Auth pages — không có Navbar */}
-        <Route path="/login"    element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
         {/* App pages — có Navbar qua MainLayout */}
         <Route element={<MainLayout />}>
-          <Route path="/"          element={<HomePage />} />
-          <Route path="/explore"   element={<PlaceholderPage title="Khám phá" />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/explore" element={<PlaceholderPage title="Khám phá" />} />
           <Route path="/community" element={<PlaceholderPage title="Cộng đồng" />} />
-          <Route path="/reels"     element={<PlaceholderPage title="Thước phim" />} />
-          <Route path="/events"    element={<PlaceholderPage title="Sự kiện" />} />
+          <Route path="/reels" element={<PlaceholderPage title="Thước phim" />} />
+          <Route path="/events" element={<PlaceholderPage title="Sự kiện" />} />
           <Route path="/profile/:handle" element={<ProfilePage />} />
-          <Route path="/settings"  element={<PlaceholderPage title="Cài đặt" />} />
+          <Route path="/settings" element={<PlaceholderPage title="Cài đặt" />} />
         </Route>
 
         {/* Fallback */}

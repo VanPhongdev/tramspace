@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import api from '../../lib/api.js';
+import UserAvatar from '../UserAvatar.jsx';
 
 /* ─── Navigation items ─────────────────────────────────────────── */
 const NAV_ITEMS = [
@@ -126,9 +127,13 @@ export default function Navbar() {
             aria-expanded={dropdownOpen}
             aria-label="Menu tài khoản"
           >
-            <div className="navbar-avatar-img">
-              {/* Dynamic user initials */}
-              <span>{getInitials(user?.displayName || user?.email)}</span>
+          <div className="navbar-avatar-img">
+              <UserAvatar
+                avatarUrl={user?.avatarUrl}
+                initials={getInitials(user?.displayName || user?.email)}
+                color="#006b5f"
+                size={36}
+              />
             </div>
             <span className="material-symbols-outlined navbar-avatar-chevron">
               expand_more
@@ -140,9 +145,13 @@ export default function Navbar() {
             <div className="navbar-dropdown" role="menu">
               {/* User info */}
               <div className="navbar-dropdown-user">
-                <div className="navbar-dropdown-avatar">
-                  <span>{getInitials(user?.displayName || user?.email)}</span>
-                </div>
+                <UserAvatar
+                  avatarUrl={user?.avatarUrl}
+                  initials={getInitials(user?.displayName || user?.email)}
+                  color="#006b5f"
+                  size={44}
+                  className="navbar-dropdown-avatar"
+                />
                 <div>
                   <p className="navbar-dropdown-name">{user?.displayName || user?.email || 'Người dùng'}</p>
                   <p className="navbar-dropdown-email">

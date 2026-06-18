@@ -38,13 +38,6 @@ const formatRelativeTime = (date) => {
   return `${diffDays} ngày trước`
 }
 
-const normalizeUsername = (displayName, email) => {
-  if (displayName) {
-    return `@${displayName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '')}`
-  }
-  return `@${email.split('@')[0]}`
-}
-
 export const getHomeData = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -53,6 +46,8 @@ export const getHomeData = async (userId) => {
       email: true,
       displayName: true,
       username: true,
+      avatarUrl: true,
+      coverUrl: true,
       followersCount: true,
       followingCount: true,
       postsCount: true,
@@ -64,8 +59,10 @@ export const getHomeData = async (userId) => {
   const currentUser = {
     id: user.id,
     name: user.displayName || user.email,
-    username: user.username ?? null,   // null nếu chưa đặt, string nếu đã đặt
+    username: user.username ?? null,
     initials: getInitials(user.displayName || user.email),
+    avatarUrl: user.avatarUrl ?? null,
+    coverUrl: user.coverUrl ?? null,
     avatarColor: getColorFromId(user.id),
     following: formatCount(user.followingCount ?? 0),
     followers: formatCount(user.followersCount ?? 0),
@@ -81,6 +78,7 @@ export const getHomeData = async (userId) => {
           id: true,
           displayName: true,
           email: true,
+          avatarUrl: true,
           postsCount: true,
         },
       },
@@ -93,8 +91,10 @@ export const getHomeData = async (userId) => {
   const feedPosts = feedPostsRaw.map((post) => ({
     id: post.id,
     author: {
+      id: post.user?.id,
       name: post.user?.displayName || post.user?.email || 'Người dùng',
       initials: getInitials(post.user?.displayName || post.user?.email || 'ND'),
+      avatarUrl: post.user?.avatarUrl ?? null,
       color: getColorFromId(post.user?.id || post.id),
       badge: post.user?.postsCount > 50 ? 'Người sáng tạo' : null,
       badgeColor: '#6063ee',
@@ -121,6 +121,7 @@ export const getHomeData = async (userId) => {
       id: true,
       displayName: true,
       email: true,
+      avatarUrl: true,
     },
   })
 
@@ -128,6 +129,7 @@ export const getHomeData = async (userId) => {
     id: story.id,
     name: story.displayName || story.email,
     initials: getInitials(story.displayName || story.email),
+    avatarUrl: story.avatarUrl ?? null,
     color: getColorFromId(story.id),
   }))
 
@@ -145,6 +147,7 @@ export const getHomeData = async (userId) => {
       id: true,
       displayName: true,
       email: true,
+      avatarUrl: true,
       followersCount: true,
     },
   })
@@ -153,6 +156,7 @@ export const getHomeData = async (userId) => {
     id: suggestion.id,
     name: suggestion.displayName || suggestion.email,
     initials: getInitials(suggestion.displayName || suggestion.email),
+    avatarUrl: suggestion.avatarUrl ?? null,
     color: getColorFromId(suggestion.id),
     reason: `Có ${formatCount(suggestion.followersCount)} người theo dõi`,
   }))
@@ -164,6 +168,7 @@ export const getHomeData = async (userId) => {
       id: true,
       displayName: true,
       email: true,
+      avatarUrl: true,
     },
   })
 
@@ -171,6 +176,7 @@ export const getHomeData = async (userId) => {
     id: friend.id,
     name: friend.displayName || friend.email,
     initials: getInitials(friend.displayName || friend.email),
+    avatarUrl: friend.avatarUrl ?? null,
     color: getColorFromId(friend.id),
   }))
 

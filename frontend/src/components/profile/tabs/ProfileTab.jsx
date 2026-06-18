@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * ProfileTab — avatar, thông tin cơ bản (tên, giới tính, ngày sinh, email), bio.
  */
 export default function ProfileTab({ form, updateField, currentUser, avatarFile, setAvatarFile }) {
     const [avatarPreview, setAvatarPreview] = useState(null);
+    const fileInputRef = useRef(null);
 
     /* Quản lý blob URL — tự revoke khi file đổi hoặc unmount */
     useEffect(() => {
@@ -23,16 +24,28 @@ export default function ProfileTab({ form, updateField, currentUser, avatarFile,
 
     return (
         <div className="epm-section">
-            {/* Banner + Avatar */}
+            {/* Banner + Avatar — click avatar để đổi */}
             <div className="epm-banner-wrap">
                 <div className="epm-banner" />
-                <img src={displaySrc} alt="Avatar" className="epm-avatar" />
+                <button
+                    type="button"
+                    className="epm-avatar-btn-wrap"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Đổi ảnh đại diện"
+                >
+                    <img src={displaySrc} alt="Avatar" className="epm-avatar" />
+                    <span className="epm-avatar-overlay">
+                        <span className="material-symbols-outlined">photo_camera</span>
+                    </span>
+                </button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="epm-hidden-input"
+                    onChange={handleAvatarChange}
+                />
             </div>
-
-            <label className="epm-avatar-btn">
-                Đổi Avatar
-                <input type="file" accept="image/*" className="epm-hidden-input" onChange={handleAvatarChange} />
-            </label>
 
             <div className="epm-row epm-row-2">
                 <div className="epm-field">

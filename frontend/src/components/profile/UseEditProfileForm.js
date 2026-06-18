@@ -90,7 +90,6 @@ export function useEditProfileForm(currentUser, isOpen, onUpdated, onClose) {
             let updatedUser = currentUser;
 
             // 1. Username trước — dễ fail nhất (cooldown / trùng tên)
-            // Tránh tình trạng lưu nửa chừng: profile thành công nhưng username fail
             if (isUsernameChanged && form.username?.trim()) {
                 try {
                     const result = await api.updateUsername(form.username.trim());
@@ -99,7 +98,7 @@ export function useEditProfileForm(currentUser, isOpen, onUpdated, onClose) {
                     const msg = err?.response?.data?.message || 'Không thể đổi username';
                     setUsernameError(msg);
                     setSaving(false);
-                    return; // dừng lại, không đóng modal
+                    return;
                 }
             }
 
@@ -107,13 +106,25 @@ export function useEditProfileForm(currentUser, isOpen, onUpdated, onClose) {
             if (avatarFile) {
                 const fd = new FormData();
                 fd.append('avatar', avatarFile);
-                const avatarResult = await api.uploadAvatar(fd);
-                updatedUser = { ...updatedUser, avatar: avatarResult.data.avatar };
+                const avatarResult = await api._raw.post('/api/users/me/avatar', fd);
+                updatedUser = { ...updatedUser, ...(avatarResult.data?.data ?? {}) };
             }
 
-            // 3. Phần còn lại của profile (bỏ username vì đã xử lý riêng ở bước 1)
-            const { username, ...profilePayload } = form;
-            updatedUser = await api.updateProfile(profilePayload);
+            // 3. Profile — chỉ gửi fields backend chấp nhận (khớp updateProfileSchema)
+            const profilePayload = {};
+            if (form.displayName !== undefined) profilePayload.displayName = form.displayName.trim();
+            if (form.bio !== undefined) profilePayload.bio = form.bio.trim();
+            if (form.hometown !== undefined) profilePayload.hometown = form.hometown.trim();
+            if (form.currentLocation !== undefined) profilePayload.currentLocation = form.currentLocation.trim();
+            if (form.occupation !== undefined) profilePayload.occupation = form.occupation.trim();
+            if (form.major !== undefined) profilePayload.major = form.major.trim();
+            if (form.gender !== '' && form.gender !== undefined) profilePayload.gender = Number(form.gender);
+            if (form.birthdate) profilePayload.dateOfBirth = new Date(form.birthdate).toISOString();
+
+            // Bỏ qua nếu không có gì thay đổi trong profile
+            if (Object.keys(profilePayload).length > 0) {
+                updatedUser = await api.updateProfile(profilePayload);
+            }
 
             onUpdated?.(updatedUser);
             onClose?.();

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import UserAvatar from '../UserAvatar';
 
 const MAX_IMAGES = 10;
 const GRID_SHOW  = 4;   // số ảnh tối đa hiển thị trong grid
@@ -106,9 +107,13 @@ export default function CreatePost({ currentUser, onSubmit, isOpen, onClose, ini
 
         {/* ── User row ── */}
         <div className="cp-user-row">
-          <div className="feed-avatar" style={{ background: currentUser?.avatarColor ?? '#006b5f' }}>
-            <span>{currentUser?.initials ?? 'US'}</span>
-          </div>
+          <UserAvatar
+            avatarUrl={currentUser?.avatarUrl}
+            initials={currentUser?.initials ?? 'US'}
+            color={currentUser?.avatarColor ?? '#006b5f'}
+            size={42}
+            className="feed-avatar"
+          />
           <div>
             <p className="cp-user-name">{currentUser?.name ?? 'Người dùng'}</p>
             <button className="cp-privacy-btn" type="button">

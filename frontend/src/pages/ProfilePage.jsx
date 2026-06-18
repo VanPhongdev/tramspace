@@ -93,14 +93,15 @@ export default function ProfilePage() {
     name: user.displayName || user.email,
     username: user.username ? `@${user.username}` : null,
     role: 'Người dùng',
+    avatarUrl: user.avatarUrl || null,
     avatarColor: getColorFromId(user.id),
     coverColor: getColorFromId(user.id + '_cover'),
     initials: getInitials(user.displayName || user.email),
     bio: user.bio || 'Chưa có tiểu sử',
-    location: '',
+    location: user.hometown || user.currentLocation || '',
     website: '',
-    work: '',
-    education: '',
+    work: user.occupation || '',
+    education: user.major || '',
     joinDate: new Date(user.createdAt).toLocaleDateString('vi-VN'),
     stats: {
       posts: user.postsCount || 0,
@@ -121,7 +122,11 @@ export default function ProfilePage() {
         {/* Cover photo */}
         <div
           className="profile-cover"
-          style={{ background: u.coverColor }}
+          style={
+            user.coverUrl
+              ? { backgroundImage: `url(${user.coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+              : { background: u.coverColor }
+          }
           aria-label="Ảnh bìa"
         />
 
@@ -130,9 +135,12 @@ export default function ProfilePage() {
           <div className="profile-avatar-wrap">
             <div
               className="profile-avatar"
-              style={{ background: u.avatarColor }}
+              style={u.avatarUrl ? {} : { background: u.avatarColor }}
             >
-              <span>{u.initials}</span>
+              {u.avatarUrl
+                ? <img src={u.avatarUrl} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : <span>{u.initials}</span>
+              }
             </div>
             {u.isOnline && (
               <span className="profile-online-dot" aria-label="Đang trực tuyến" />

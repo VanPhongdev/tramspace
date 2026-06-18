@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import UserAvatar from '../UserAvatar';
 
 /**
  * FeedPost — Post card dùng chung cho HomePage và ProfilePage.
@@ -35,12 +36,13 @@ export default function FeedPost({ post, showPinned = false }) {
       <div className="feed-post-header">
         <div className="feed-post-author">
           {/* Avatar */}
-          <div
+          <UserAvatar
+            avatarUrl={post.author?.avatarUrl}
+            initials={post.author?.initials}
+            color={post.author?.color ?? '#006b5f'}
+            size={42}
             className="feed-avatar"
-            style={{ background: post.author?.color ?? '#006b5f' }}
-          >
-            <span>{post.author?.initials}</span>
-          </div>
+          />
 
           <div>
             <div className="feed-author-meta">

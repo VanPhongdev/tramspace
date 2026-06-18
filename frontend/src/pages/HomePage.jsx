@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import StoryStrip from '../components/home/StoryStrip';
 import CreatePost from '../components/home/CreatePost';
 import FeedPost from '../components/home/FeedPost';
+import UserAvatar from '../components/UserAvatar';
 
 import api from '../lib/api';
 
@@ -102,11 +103,16 @@ export default function HomePage() {
             <button
               type="button"
               className="user-mini-avatar"
-              style={{ background: currentUser.avatarColor ?? '#006b5f' }}
               onClick={() => navigate(`/profile/${currentUser.username ?? currentUser.id}`)}
               aria-label="Xem trang cá nhân"
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
             >
-              <span>{currentUser.initials ?? 'US'}</span>
+              <UserAvatar
+                avatarUrl={currentUser.avatarUrl}
+                initials={currentUser.initials ?? 'US'}
+                color={currentUser.avatarColor ?? '#006b5f'}
+                size={48}
+              />
             </button>
             <div>
               <p className="user-mini-name">{currentUser.name}</p>
@@ -168,12 +174,14 @@ export default function HomePage() {
         {/* Trigger card — click để mở modal */}
         <div className="create-post-trigger">
           <div className="cpt-top">
-            <div
+            <UserAvatar
+              avatarUrl={currentUser.avatarUrl}
+              initials={currentUser.initials ?? 'US'}
+              color={currentUser.avatarColor ?? '#006b5f'}
+              size={40}
               className="feed-avatar"
-              style={{ background: currentUser.avatarColor ?? '#006b5f', flexShrink: 0 }}
-            >
-              <span>{currentUser.initials ?? 'US'}</span>
-            </div>
+              style={{ flexShrink: 0 }}
+            />
             <button
               className="cpt-input-btn"
               onClick={() => setIsModalOpen(true)}
@@ -253,12 +261,13 @@ export default function HomePage() {
             {suggestions?.map((s) => (
               <div key={s.id} className="suggest-item">
                 <div className="suggest-info">
-                  <div
+                  <UserAvatar
+                    avatarUrl={s.avatarUrl}
+                    initials={s.initials}
+                    color={s.color}
+                    size={38}
                     className="suggest-avatar"
-                    style={{ background: s.color }}
-                  >
-                    <span>{s.initials}</span>
-                  </div>
+                  />
                   <div>
                     <p className="suggest-name">{s.name}</p>
                     <p className="suggest-reason">{s.reason}</p>
@@ -285,12 +294,13 @@ export default function HomePage() {
             {onlineFriends?.map((f) => (
               <button key={f.id} className="online-item">
                 <div className="online-avatar-wrap">
-                  <div
+                  <UserAvatar
+                    avatarUrl={f.avatarUrl}
+                    initials={f.initials}
+                    color={f.color}
+                    size={32}
                     className="suggest-avatar"
-                    style={{ background: f.color, width: 32, height: 32, fontSize: 12 }}
-                  >
-                    <span>{f.initials}</span>
-                  </div>
+                  />
                   <span className="online-dot" />
                 </div>
                 <span className="online-name">{f.name}</span>
