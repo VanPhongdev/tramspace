@@ -1,6 +1,7 @@
 # TramSpace - Không gian dành cho mọi người
 
 TramSpace là một nền tảng mạng xã hội đang trong quá trình phát triển, với mục tiêu kết nối mọi người lại với nhau. Dự án hiện tại đã hoàn thiện các tính năng cốt lõi ban đầu của một nền tảng mạng xã hội với giao diện trực quan.
+
 <img width="1918" height="1078" alt="image" src="https://github.com/user-attachments/assets/bbffa77e-7dcb-4317-91ae-6bc970f97f58" />
 
 # Tính năng nổi bật đã hoàn thiện
