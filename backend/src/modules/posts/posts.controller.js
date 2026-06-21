@@ -23,7 +23,8 @@ export const getUserPostsHandler = async (req, res, next) => {
     const offset = Number.parseInt(req.query.offset, 10) || 0
 
     const userId = await resolveUserId(handle)
-    const posts  = await postsService.getUserPosts(userId, limit, offset)
+    const requesterId = req.user?.userId
+    const posts  = await postsService.getUserPosts(userId, limit, offset, requesterId)
     res.json({ success: true, data: posts })
   } catch (err) {
     if (err.status) return res.status(err.status).json({ success: false, message: err.message })

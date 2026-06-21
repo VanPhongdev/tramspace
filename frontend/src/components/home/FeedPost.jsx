@@ -59,9 +59,9 @@ export default function FeedPost({ post, showPinned = false }) {
             <p className="feed-post-time">
               {post.time}
               {post.location && <> • {post.location}</>}
-              {post.privacy && (
-                <span className="material-symbols-outlined feed-privacy-icon">
-                  {post.privacy === 'public' ? 'public' : post.privacy === 'friends' ? 'group' : 'lock'}
+              {post.visibility && (
+                <span className="material-symbols-outlined feed-privacy-icon" style={{ fontSize: 14, marginLeft: 6, verticalAlign: 'middle' }}>
+                  {post.visibility === 'PUBLIC' ? 'public' : post.visibility === 'FRIENDS' ? 'group' : 'lock'}
                 </span>
               )}
             </p>

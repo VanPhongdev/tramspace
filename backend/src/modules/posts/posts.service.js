@@ -34,6 +34,7 @@ const buildPostResponse = (post) => ({
   },
   time: formatRelativeTime(post.createdAt),
   location: null,
+  visibility: post.visibility || 'PUBLIC',
   content: post.content || '',
   hasImage: Array.isArray(post.media) && post.media.length > 0,
   // Mảng URL tất cả ảnh theo thứ tự displayOrder
@@ -88,9 +89,26 @@ const formatRelativeTime = (date) => {
   return `${diffDays} ngày trước`
 }
 
-export const getUserPosts = async (userId, limit = 10, offset = 0) => {
+export const getUserPosts = async (userId, limit = 10, offset = 0, requesterId = null) => {
+  let followingIds = []
+  if (requesterId) {
+    const followed = await prisma.follow.findMany({
+      where: { followerId: requesterId },
+      select: { followingId: true },
+    })
+    followingIds = followed.map(f => f.followingId)
+  }
+
   const posts = await prisma.post.findMany({
-    where: { userId },
+    where: { 
+      userId,
+      isDeleted: false,
+      OR: [
+        { visibility: 'PUBLIC' },
+        { visibility: 'PRIVATE', userId: requesterId },
+        { visibility: 'FRIENDS', userId: { in: requesterId ? [requesterId, ...followingIds] : [] } }
+      ]
+    },
     orderBy: { createdAt: 'desc' },
     take: limit,
     skip: offset,

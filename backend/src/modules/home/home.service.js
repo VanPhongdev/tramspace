@@ -68,8 +68,21 @@ export const getHomeData = async (userId) => {
     followers: formatCount(user.followersCount ?? 0),
   }
 
+  const followed = await prisma.follow.findMany({
+    where: { followerId: userId },
+    select: { followingId: true },
+  })
+  const followingIds = followed.map((item) => item.followingId)
+
   const feedPostsRaw = await prisma.post.findMany({
-    where: { visibility: 'PUBLIC', isDeleted: false },
+    where: {
+      isDeleted: false,
+      OR: [
+        { visibility: 'PUBLIC' },
+        { visibility: 'PRIVATE', userId: userId },
+        { visibility: 'FRIENDS', userId: { in: [userId, ...followingIds] } },
+      ],
+    },
     orderBy: { createdAt: 'desc' },
     take: 12,
     include: {
@@ -101,6 +114,7 @@ export const getHomeData = async (userId) => {
     },
     time: formatRelativeTime(post.createdAt),
     location: null,
+    visibility: post.visibility || 'PUBLIC',
     content: post.content || '',
     hasImage: Array.isArray(post.media) && post.media.length > 0,
     images: post.media.map((m) => m.imageUrl),
@@ -133,11 +147,7 @@ export const getHomeData = async (userId) => {
     color: getColorFromId(story.id),
   }))
 
-  const followed = await prisma.follow.findMany({
-    where: { followerId: userId },
-    select: { followingId: true },
-  })
-  const followingIds = followed.map((item) => item.followingId)
+
 
   const suggestionsRaw = await prisma.user.findMany({
     where: { id: { notIn: [userId, ...followingIds] } },

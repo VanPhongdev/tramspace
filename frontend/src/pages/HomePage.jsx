@@ -52,10 +52,10 @@ export default function HomePage() {
     e.target.value = '';
   };
 
-  const handleNewPost = async (content, imageFiles) => {
+  const handleNewPost = async (content, imageFiles, visibility = 'PUBLIC') => {
     setError(null)
     try {
-      const newPost = await api.createPost(content, imageFiles)
+      const newPost = await api.createPost(content, imageFiles, visibility)
       setHomeData((prev) => ({
         ...prev,
         feedPosts: [newPost, ...(prev?.feedPosts ?? [])],

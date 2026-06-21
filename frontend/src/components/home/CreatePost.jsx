@@ -12,6 +12,7 @@ export default function CreatePost({ currentUser, onSubmit, isOpen, onClose, ini
   const [text, setText]               = useState('');
   const [imageFiles, setImageFiles]   = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [visibility, setVisibility]   = useState('PUBLIC');
   const [posting, setPosting]         = useState(false);
 
   const fileInputRef = useRef(null);
@@ -43,7 +44,7 @@ export default function CreatePost({ currentUser, onSubmit, isOpen, onClose, ini
     if (posting || (!text.trim() && imageFiles.length === 0)) return;
     setPosting(true);
     try {
-      await onSubmit?.(text, imageFiles);
+      await onSubmit?.(text, imageFiles, visibility);
       resetState();
       onClose?.();
     } catch {
@@ -78,6 +79,7 @@ export default function CreatePost({ currentUser, onSubmit, isOpen, onClose, ini
     setText('');
     setImageFiles([]);
     setImagePreviews([]);
+    setVisibility('PUBLIC');
   };
 
   /* ── Grid helpers ── */
@@ -116,11 +118,33 @@ export default function CreatePost({ currentUser, onSubmit, isOpen, onClose, ini
           />
           <div>
             <p className="cp-user-name">{currentUser?.name ?? 'Người dùng'}</p>
-            <button className="cp-privacy-btn" type="button">
-              <span className="material-symbols-outlined">lock</span>
-              Chỉ mình tôi
-              <span className="material-symbols-outlined">arrow_drop_down</span>
-            </button>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <select
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value)}
+                className="cp-privacy-btn"
+                style={{ 
+                  appearance: 'none', 
+                  WebkitAppearance: 'none',
+                  paddingLeft: 24, 
+                  paddingRight: 24, 
+                  cursor: 'pointer',
+                  border: 'none',
+                  outline: 'none',
+                  fontFamily: 'inherit'
+                }}
+              >
+                <option value="PUBLIC">Công khai</option>
+                <option value="FRIENDS">Bạn bè</option>
+                <option value="PRIVATE">Chỉ mình tôi</option>
+              </select>
+              <span className="material-symbols-outlined" style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 14 }}>
+                {visibility === 'PUBLIC' ? 'public' : visibility === 'FRIENDS' ? 'group' : 'lock'}
+              </span>
+              <span className="material-symbols-outlined" style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 16 }}>
+                arrow_drop_down
+              </span>
+            </div>
           </div>
         </div>
 

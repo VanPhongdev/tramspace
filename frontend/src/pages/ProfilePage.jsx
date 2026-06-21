@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import FeedPost from '../components/home/FeedPost';
 import EditProfileModal from '../components/profile/EditProfileModal';
@@ -69,6 +69,29 @@ export default function ProfilePage() {
       navigate(`/profile/${newHandle}`, { replace: true })
     }
   }
+
+  const allPhotos = useMemo(() => {
+    const photos = [];
+    if (user?.avatarUrl) photos.push({ url: user.avatarUrl, type: 'avatar' });
+    if (user?.coverUrl) photos.push({ url: user.coverUrl, type: 'cover' });
+    
+    posts.forEach(post => {
+      if (post.images && post.images.length > 0) {
+        post.images.forEach(img => photos.push({ url: img, type: 'post' }));
+      }
+    });
+    
+    // Unique URLs
+    const unique = [];
+    const seen = new Set();
+    photos.forEach(p => {
+      if (!seen.has(p.url)) {
+        seen.add(p.url);
+        unique.push(p);
+      }
+    });
+    return unique;
+  }, [user, posts]);
 
   if (loading) {
     return (
@@ -228,22 +251,24 @@ export default function ProfilePage() {
           </div>
 
           {/* Featured photos */}
-          <div className="profile-about-card">
-            <div className="profile-card-header">
-              <h3 className="profile-card-title">Ảnh nổi bật</h3>
-              <button className="sidebar-link">Xem tất cả</button>
+          {allPhotos.length > 0 && (
+            <div className="profile-about-card">
+              <div className="profile-card-header">
+                <h3 className="profile-card-title">Ảnh nổi bật</h3>
+                <button className="sidebar-link" onClick={() => setActiveTab('Ảnh')}>Xem tất cả</button>
+              </div>
+              <div className="profile-photos-grid">
+                {allPhotos.slice(0, 6).map((photo, i) => (
+                  <button
+                    key={i}
+                    className="profile-photo-item"
+                    style={{ backgroundImage: `url(${photo.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                    aria-label="Xem ảnh"
+                  />
+                ))}
+              </div>
             </div>
-            <div className="profile-photos-grid">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <button
-                  key={i}
-                  className="profile-photo-item"
-                  style={{ background: getColorFromId(user.id + `_photo${i}`) }}
-                  aria-label="Xem ảnh"
-                />
-              ))}
-            </div>
-          </div>
+          )}
 
         </aside>
 
@@ -275,9 +300,6 @@ export default function ProfilePage() {
                       showPinned
                     />
                   ))}
-                  <div className="load-more-wrap">
-                    <button className="btn-load-more">Xem thêm bài viết</button>
-                  </div>
                 </>
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
@@ -289,18 +311,165 @@ export default function ProfilePage() {
 
           {activeTab === 'Ảnh' && (
             <div className="profile-photos-tab">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-                <button
-                  key={i}
-                  className="profile-photo-tab-item"
-                  style={{ background: getColorFromId(user.id + `_tab${i}`) }}
-                  aria-label="Xem ảnh"
-                />
-              ))}
+              {allPhotos.length > 0 ? (
+                allPhotos.map((photo, i) => (
+                  <button
+                    key={i}
+                    className="profile-photo-tab-item"
+                    style={{ backgroundImage: `url(${photo.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                    aria-label="Xem ảnh"
+                  />
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#888', gridColumn: '1 / -1' }}>
+                  Chưa có ảnh nào
+                </div>
+              )}
             </div>
           )}
 
-          {!['Bài viết', 'Ảnh'].includes(activeTab) && (
+          {activeTab === 'Giới thiệu' && (
+            <div className="profile-about-tab" style={{ background: 'var(--color-surface)', padding: 24, borderRadius: 12, border: '1px solid var(--color-border)', color: 'var(--color-text)' }}>
+              <h2 style={{ marginBottom: 20, fontSize: 20, fontWeight: 600 }}>Giới thiệu về {u.name}</h2>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
+                {/* Cột trái */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, borderBottom: '1px solid var(--color-border)', paddingBottom: 8, color: 'var(--color-text)' }}>Thông tin cơ bản</h3>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--color-text-light)' }}>badge</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-light)', marginBottom: 2 }}>Họ và tên</div>
+                      <div style={{ fontWeight: 500 }}>{user.displayName || 'Chưa cập nhật'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--color-text-light)' }}>alternate_email</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-light)', marginBottom: 2 }}>Tên người dùng</div>
+                      <div style={{ fontWeight: 500 }}>@{user.username || 'Chưa cập nhật'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--color-text-light)' }}>wc</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-light)', marginBottom: 2 }}>Giới tính</div>
+                      <div style={{ fontWeight: 500 }}>
+                        {user.gender === 0 ? 'Nam' : user.gender === 1 ? 'Nữ' : user.gender === 2 ? 'Khác' : 'Chưa cập nhật'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--color-text-light)' }}>cake</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-light)', marginBottom: 2 }}>Ngày sinh</div>
+                      <div style={{ fontWeight: 500 }}>{user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--color-text-light)' }}>mail</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-light)', marginBottom: 2 }}>Email</div>
+                      <div style={{ fontWeight: 500 }}>{user.email}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cột phải */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, borderBottom: '1px solid var(--color-border)', paddingBottom: 8, color: 'var(--color-text)' }}>Công việc & Học vấn</h3>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--color-text-light)' }}>work</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-light)', marginBottom: 2 }}>Nghề nghiệp</div>
+                      <div style={{ fontWeight: 500 }}>{user.occupation || 'Chưa cập nhật'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--color-text-light)' }}>school</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-light)', marginBottom: 2 }}>Ngành học / Chuyên môn</div>
+                      <div style={{ fontWeight: 500 }}>{user.major || 'Chưa cập nhật'}</div>
+                    </div>
+                  </div>
+
+                  <h3 style={{ fontSize: 16, fontWeight: 600, borderBottom: '1px solid var(--color-border)', paddingBottom: 8, marginTop: 12, color: 'var(--color-text)' }}>Nơi sống</h3>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--color-text-light)' }}>home</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-light)', marginBottom: 2 }}>Quê quán</div>
+                      <div style={{ fontWeight: 500 }}>{user.hometown || 'Chưa cập nhật'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ color: 'var(--color-text-light)' }}>location_on</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-light)', marginBottom: 2 }}>Nơi ở hiện tại</div>
+                      <div style={{ fontWeight: 500 }}>{user.currentLocation || 'Chưa cập nhật'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mạng xã hội */}
+                {(user.facebookUrl || user.instagramUrl || user.linkedinUrl || user.githubUrl) && (
+                  <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, borderBottom: '1px solid var(--color-border)', paddingBottom: 8, color: 'var(--color-text)' }}>Liên kết mạng xã hội</h3>
+                    <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                      {user.facebookUrl && (
+                        <a href={user.facebookUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1877F2', fontWeight: 500, textDecoration: 'none', background: 'rgba(24,119,242,0.1)', padding: '8px 16px', borderRadius: 20 }}>
+                          <span className="material-symbols-outlined">public</span> Facebook
+                        </a>
+                      )}
+                      {user.instagramUrl && (
+                        <a href={user.instagramUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#E4405F', fontWeight: 500, textDecoration: 'none', background: 'rgba(228,64,95,0.1)', padding: '8px 16px', borderRadius: 20 }}>
+                          <span className="material-symbols-outlined">photo_camera</span> Instagram
+                        </a>
+                      )}
+                      {user.linkedinUrl && (
+                        <a href={user.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0A66C2', fontWeight: 500, textDecoration: 'none', background: 'rgba(10,102,194,0.1)', padding: '8px 16px', borderRadius: 20 }}>
+                          <span className="material-symbols-outlined">work</span> LinkedIn
+                        </a>
+                      )}
+                      {user.githubUrl && (
+                        <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text)', fontWeight: 500, textDecoration: 'none', background: 'var(--color-background)', padding: '8px 16px', borderRadius: 20 }}>
+                          <span className="material-symbols-outlined">code</span> GitHub
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!['Bài viết', 'Ảnh', 'Giới thiệu'].includes(activeTab) && (
             <div className="tab-placeholder">
               <span className="material-symbols-outlined">construction</span>
               <p>Nội dung {activeTab.toLowerCase()} đang được xây dựng.</p>

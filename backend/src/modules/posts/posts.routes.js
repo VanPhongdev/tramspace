@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { authenticate } from '../../middlewares/auth.middleware.js'
+import { authenticate, softAuthenticate } from '../../middlewares/auth.middleware.js'
 import upload from '../../middlewares/upload.middleware.js'
 import {
   getUserPostsHandler,
@@ -9,7 +9,7 @@ import {
 
 const router = Router()
 
-router.get('/users/:id/posts', getUserPostsHandler)
+router.get('/users/:id/posts', softAuthenticate, getUserPostsHandler)
 
 router.get('/:id', getPostHandler)
 
