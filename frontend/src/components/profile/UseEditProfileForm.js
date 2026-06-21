@@ -7,7 +7,7 @@ const buildInitialForm = (user) => ({
     displayName: user?.displayName || '',
     bio: user?.bio || '',
     username: user?.username || '',
-    gender: user?.gender || '',
+    gender: user?.gender != null ? user.gender : '',
     birthdate: user?.dateOfBirth ? user.dateOfBirth.slice(0, 10) : '',
     hometown: user?.hometown || '',
     currentLocation: user?.currentLocation || '',
@@ -110,16 +110,34 @@ export function useEditProfileForm(currentUser, isOpen, onUpdated, onClose) {
                 updatedUser = { ...updatedUser, ...(avatarResult.data?.data ?? {}) };
             }
 
-            // 3. Profile — chỉ gửi fields backend chấp nhận (khớp updateProfileSchema)
+            // 3. Profile — chỉ gửi fields đã thay đổi và có giá trị hợp lệ
+            const original = buildInitialForm(currentUser);
             const profilePayload = {};
-            if (form.displayName !== undefined) profilePayload.displayName = form.displayName.trim();
-            if (form.bio !== undefined) profilePayload.bio = form.bio.trim();
-            if (form.hometown !== undefined) profilePayload.hometown = form.hometown.trim();
-            if (form.currentLocation !== undefined) profilePayload.currentLocation = form.currentLocation.trim();
-            if (form.occupation !== undefined) profilePayload.occupation = form.occupation.trim();
-            if (form.major !== undefined) profilePayload.major = form.major.trim();
-            if (form.gender !== '' && form.gender !== undefined) profilePayload.gender = Number(form.gender);
-            if (form.birthdate) profilePayload.dateOfBirth = new Date(form.birthdate).toISOString();
+
+            // String fields: chỉ gửi nếu thay đổi so với ban đầu
+            const stringFields = ['displayName', 'bio', 'hometown', 'currentLocation', 'occupation', 'major'];
+            for (const field of stringFields) {
+                const trimmed = (form[field] ?? '').trim();
+                const originalTrimmed = (original[field] ?? '').trim();
+                if (trimmed !== originalTrimmed) {
+                    // displayName không được rỗng (min:1 ở backend)
+                    if (field === 'displayName' && !trimmed) continue;
+                    profilePayload[field] = trimmed;
+                }
+            }
+
+            // Gender: chỉ gửi nếu thay đổi so với ban đầu
+            // Gửi null để xóa giới tính, gửi số (0/1/2) khi chọn
+            if (form.gender !== original.gender) {
+                profilePayload.gender = (form.gender === '' || form.gender == null)
+                    ? null
+                    : Number(form.gender);
+            }
+
+            // Birthdate
+            if (form.birthdate !== original.birthdate && form.birthdate) {
+                profilePayload.dateOfBirth = new Date(form.birthdate).toISOString();
+            }
 
             // Bỏ qua nếu không có gì thay đổi trong profile
             if (Object.keys(profilePayload).length > 0) {

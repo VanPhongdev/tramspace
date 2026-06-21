@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import api from '../../lib/api.js';
 import UserAvatar from '../UserAvatar.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 /* ─── Navigation items ─────────────────────────────────────────── */
 const NAV_ITEMS = [
@@ -24,22 +25,9 @@ const getInitials = (name) => {
 export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchValue,  setSearchValue]  = useState('');
-  const [user, setUser] = useState(null);
+  const { user, setUser } = useAuth();
   const dropdownRef = useRef(null);
   const navigate    = useNavigate();
-
-  /* Fetch current user on mount */
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userData = await api.getMe();
-        setUser(userData);
-      } catch (err) {
-        console.error('Failed to fetch user:', err);
-      }
-    };
-    fetchUser();
-  }, []);
 
   /* Close dropdown on outside click */
   useEffect(() => {
@@ -52,8 +40,14 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setDropdownOpen(false);
+    try {
+      await api.logout();
+    } catch(e) {
+      console.error('Logout failed:', e);
+    }
+    setUser(null);
     navigate('/login');
   };
 

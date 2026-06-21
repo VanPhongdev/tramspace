@@ -1,13 +1,15 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageTransition from '../components/PageTransition';
 import AuthVisual from '../components/auth/AuthVisual';
 import InputField from '../components/auth/InputField';
 import SocialAuthButtons from '../components/auth/SocialAuthButtons';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '', remember: false });
   const navigate = useNavigate()
+  const { setUser } = useAuth();
   const validateEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -34,7 +36,13 @@ export default function LoginPage() {
     setIsSubmitting(true)
     import('../lib/api').then(({ default: api }) => {
       api.login({ email: form.email, password: form.password })
-        .then(() => {
+        .then(async () => {
+          try {
+            const userData = await api.getMe();
+            setUser(userData);
+          } catch (e) {
+            console.error('Failed to fetch user after login', e);
+          }
           setIsSubmitting(false)
           navigate('/')
         })

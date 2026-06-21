@@ -67,7 +67,7 @@ export const updateProfileSchema = z.object({
   currentLocation: z.string().trim().max(150, 'Nơi ở hiện tại tối đa 150 ký tự').optional(),
   occupation: z.string().trim().max(100, 'Nghề nghiệp tối đa 100 ký tự').optional(),
   major: z.string().trim().max(100, 'Học vấn tối đa 100 ký tự').optional(),
-  gender: z.number().int().min(0).max(2).optional(),
+  gender: z.number().int().min(0).max(2).nullable().optional(),
   dateOfBirth: z.string().datetime({ offset: true }).optional(),
 }).refine(
   (data) => Object.keys(data).length > 0,

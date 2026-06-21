@@ -62,17 +62,26 @@ export default function ProfileTab({ form, updateField, currentUser, avatarFile,
                 </div>
                 <div className="epm-field">
                     <label className="epm-label" htmlFor="epm-gender">Giới tính</label>
-                    <select
-                        id="epm-gender"
-                        className="epm-input"
-                        value={form.gender || ''}
-                        onChange={(e) => updateField('gender', e.target.value)}
-                    >
-                        <option value="">Chọn giới tính</option>
-                        <option value="male">Nam</option>
-                        <option value="female">Nữ</option>
-                        <option value="other">Khác</option>
-                    </select>
+                    <div style={{ position: 'relative' }}>
+                        <select
+                            id="epm-gender"
+                            className="epm-input"
+                            value={form.gender !== '' && form.gender != null ? String(form.gender) : ''}
+                            onChange={(e) => updateField('gender', e.target.value === '' ? '' : Number(e.target.value))}
+                            style={{ appearance: 'none', WebkitAppearance: 'none', paddingRight: 40 }}
+                        >
+                            <option value="">-- Chưa chọn --</option>
+                            <option value="0">Nam</option>
+                            <option value="1">Nữ</option>
+                            <option value="2">Khác</option>
+                        </select>
+                        <span
+                            className="material-symbols-outlined"
+                            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6c7a77', fontSize: 20 }}
+                        >
+                            expand_more
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -88,22 +97,22 @@ export default function ProfileTab({ form, updateField, currentUser, avatarFile,
                     />
                 </div>
                 <div className="epm-field">
-                    <label className="epm-label" htmlFor="epm-email">Email</label>
-                    <input
-                        id="epm-email"
-                        className="epm-input"
-                        value={currentUser?.email || ''}
-                        disabled
-                    />
+                    <label className="epm-label">Mật khẩu</label>
+                    <div className="epm-password-row">
+                        <span className="epm-password-dots">••••••••</span>
+                        <button type="button" className="epm-link-btn">Thay đổi</button>
+                    </div>
                 </div>
             </div>
 
             <div className="epm-field">
-                <label className="epm-label">Mật khẩu</label>
-                <div className="epm-password-row">
-                    <span className="epm-password-dots">••••••••</span>
-                    <button type="button" className="epm-link-btn">Thay đổi</button>
-                </div>
+                <label className="epm-label" htmlFor="epm-email">Email</label>
+                <input
+                    id="epm-email"
+                    className="epm-input"
+                    value={currentUser?.email || ''}
+                    disabled
+                />
             </div>
 
             <div className="epm-field">

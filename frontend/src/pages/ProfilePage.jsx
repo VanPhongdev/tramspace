@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import FeedPost from '../components/home/FeedPost';
 import EditProfileModal from '../components/profile/EditProfileModal';
 import api from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 const TABS = ['Bài viết', 'Ảnh', 'Video', 'Đã lưu', 'Giới thiệu', 'Bạn bè'];
 
@@ -32,6 +33,7 @@ export default function ProfilePage() {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('Bài viết')
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const { setUser: setAuthUser } = useAuth()
 
   useEffect(() => {
     let active = true
@@ -60,9 +62,8 @@ export default function ProfilePage() {
   /* Sau khi cập nhật profile thành công, nếu username thay đổi thì redirect */
   const handleProfileUpdated = (updatedUser) => {
     setUser(updatedUser)
+    setAuthUser(updatedUser)   // Sync lên AuthContext → Navbar cập nhật ngay
     setIsEditOpen(false)
-    // Nếu handle hiện tại là UUID và user vừa đặt username → redirect sang /profile/username
-    // Hoặc username thay đổi so với handle hiện tại
     const newHandle = updatedUser.username ?? updatedUser.id
     if (newHandle !== handle) {
       navigate(`/profile/${newHandle}`, { replace: true })
@@ -192,10 +193,10 @@ export default function ProfilePage() {
             <div className="profile-details">
               {[
                 { icon: 'location_on', text: u.location },
-                { icon: 'link',        text: u.website,  link: true },
+                { icon: 'link', text: u.website, link: true },
                 { icon: 'calendar_month', text: `Tham gia ${u.joinDate}` },
-                { icon: 'work',        text: u.work },
-                { icon: 'school',      text: u.education },
+                { icon: 'work', text: u.work },
+                { icon: 'school', text: u.education },
               ].filter(({ text }) => text).map(({ icon, text, link }) => (
                 <div key={icon} className="profile-detail-item">
                   <span className="material-symbols-outlined profile-detail-icon">{icon}</span>
@@ -213,10 +214,10 @@ export default function ProfilePage() {
             {/* Stats grid */}
             <div className="profile-stats-grid">
               {Object.entries({
-                'Bài viết':  u.stats.posts,
-                'Follower':  u.stats.followers,
+                'Bài viết': u.stats.posts,
+                'Follower': u.stats.followers,
                 'Following': u.stats.following,
-                'Thích':     u.stats.likes,
+                'Thích': u.stats.likes,
               }).map(([label, val]) => (
                 <div key={label} className="profile-stat">
                   <strong>{val}</strong>
