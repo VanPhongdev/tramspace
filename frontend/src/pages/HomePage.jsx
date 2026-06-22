@@ -12,11 +12,11 @@ const sidebarNav = [
   { to: '/', icon: 'home', label: 'Trang chủ', exact: true },
   { to: '/explore', icon: 'explore', label: 'Khám phá' },
   { to: '/community', icon: 'groups', label: 'Cộng đồng' },
-  { to: '/saved', icon: 'bookmark', label: 'Đã lưu' },
+  { to: '/reels', icon: 'movie', label: 'Thước phim' },
   { to: '/events', icon: 'event', label: 'Sự kiện' },
 ];
 
-export default function HomePage() {
+export default function HomePage({ view = 'feed' }) {
   const navigate = useNavigate()
   const [homeData, setHomeData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -28,20 +28,37 @@ export default function HomePage() {
   useEffect(() => {
     let active = true
     setLoading(true)
-    api.getHome()
-      .then((home) => {
-        if (!active) return
-        setHomeData(home)
-      })
-      .catch((err) => {
-        const msg = err?.response?.data?.message || err?.response?.data?.error || 'Không thể tải dữ liệu trang chủ'
-        setError(msg)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
+    
+    if (view === 'feed') {
+      api.getHome()
+        .then((home) => {
+          if (!active) return
+          setHomeData(home)
+        })
+        .catch((err) => {
+          const msg = err?.response?.data?.message || err?.response?.data?.error || 'Không thể tải dữ liệu trang chủ'
+          setError(msg)
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    } else if (view === 'saved') {
+      api.getSavedPosts()
+        .then((savedPosts) => {
+          if (!active) return
+          setHomeData({ feedPosts: savedPosts, stories: [], suggestions: [], onlineFriends: [] })
+        })
+        .catch((err) => {
+          const msg = err?.response?.data?.message || err?.response?.data?.error || 'Không thể tải bài viết đã lưu'
+          setError(msg)
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    }
+
     return () => { active = false }
-  }, [])
+  }, [view])
 
   /* Chọn ảnh nhanh từ nút Ảnh/Video -> mở modal với ảnh đã chọn */
   const handleQuickImageSelect = (e) => {
@@ -168,11 +185,13 @@ export default function HomePage() {
 
       {/* ══ CENTER FEED ════════════════════════════════════════════ */}
       <section className="home-center-feed">
-        {/* Stories — từ /api/stories/feed */}
-        <StoryStrip stories={stories} />
+        {view === 'feed' && (
+          <>
+            {/* Stories — từ /api/stories/feed */}
+            <StoryStrip stories={stories} />
 
-        {/* Trigger card — click để mở modal */}
-        <div className="create-post-trigger">
+            {/* Trigger card — click để mở modal */}
+            <div className="create-post-trigger">
           <div className="cpt-top">
             <UserAvatar
               avatarUrl={currentUser.avatarUrl}
@@ -216,20 +235,35 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Modal tạo bài viết */}
-        <CreatePost
-          currentUser={currentUser}
-          onSubmit={handleNewPost}
-          isOpen={isModalOpen}
-          initialFiles={initialFiles}
-          onClose={() => { setIsModalOpen(false); setInitialFiles([]); }}
-        />
+            {/* Modal tạo bài viết */}
+            <CreatePost
+              currentUser={currentUser}
+              onSubmit={handleNewPost}
+              isOpen={isModalOpen}
+              initialFiles={initialFiles}
+              onClose={() => { setIsModalOpen(false); setInitialFiles([]); }}
+            />
+          </>
+        )}
+
+        {view === 'saved' && (
+          <div style={{ background: 'var(--color-surface)', padding: 16, borderRadius: 12, marginBottom: 16, border: '1px solid var(--color-border)' }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Đã lưu</h2>
+            <p style={{ margin: '4px 0 0', color: 'var(--color-text-light)', fontSize: 14 }}>Các bài viết bạn đã lưu sẽ hiển thị ở đây.</p>
+          </div>
+        )}
 
         {/* Feed — từ /api/feed */}
         <div className="feed-list">
-          {feedPosts?.map((post) => (
-            <FeedPost key={post.id} post={post} />
-          ))}
+          {feedPosts && feedPosts.length > 0 ? (
+            feedPosts.map((post) => (
+              <FeedPost key={post.id} post={post} currentUser={currentUser} />
+            ))
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+              {view === 'feed' ? 'Chưa có bài viết nào' : 'Bạn chưa lưu bài viết nào'}
+            </div>
+          )}
         </div>
       </section>
 

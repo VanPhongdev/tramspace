@@ -98,6 +98,14 @@ export const getHomeData = async (userId) => {
       media: {
         orderBy: { displayOrder: 'asc' },
       },
+      likes: {
+        where: { userId },
+        select: { userId: true },
+      },
+      savedBy: {
+        where: { userId },
+        select: { userId: true },
+      },
     },
   })
 
@@ -120,11 +128,11 @@ export const getHomeData = async (userId) => {
     images: post.media.map((m) => m.imageUrl),
     imageAspect: '16/9',
     imageColor: getColorFromId(post.id),
-    liked: false,
+    liked: Array.isArray(post.likes) && post.likes.length > 0,
     likes: formatCount(post.likeCount ?? 0),
     comments: post.commentCount ?? 0,
     shares: 0,
-    saved: false,
+    saved: Array.isArray(post.savedBy) && post.savedBy.length > 0,
   }))
 
   const storiesRaw = await prisma.user.findMany({

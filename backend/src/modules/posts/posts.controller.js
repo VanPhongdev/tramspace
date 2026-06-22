@@ -52,3 +52,34 @@ export const createPostHandler = async (req, res, next) => {
     next(err)
   }
 }
+
+export const toggleLikeHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const result = await postsService.toggleLike(req.user.userId, id)
+    res.json({ success: true, data: result })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const toggleSaveHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const result = await postsService.toggleSavePost(req.user.userId, id)
+    res.json({ success: true, data: result })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const getSavedPostsHandler = async (req, res, next) => {
+  try {
+    const limit = Math.min(Number.parseInt(req.query.limit, 10) || 10, 50)
+    const offset = Number.parseInt(req.query.offset, 10) || 0
+    const posts = await postsService.getSavedPosts(req.user.userId, limit, offset)
+    res.json({ success: true, data: posts })
+  } catch (err) {
+    next(err)
+  }
+}

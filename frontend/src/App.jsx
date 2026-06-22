@@ -60,7 +60,8 @@ export default function App() {
           {/* App pages — có Navbar qua MainLayout */}
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<HomePage view="feed" />} />
+              <Route path="/saved" element={<HomePage view="saved" />} />
               <Route path="/explore" element={<PlaceholderPage title="Khám phá" />} />
               <Route path="/community" element={<PlaceholderPage title="Cộng đồng" />} />
               <Route path="/reels" element={<PlaceholderPage title="Thước phim" />} />

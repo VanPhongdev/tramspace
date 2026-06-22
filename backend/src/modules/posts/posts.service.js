@@ -40,16 +40,16 @@ const buildPostResponse = (post) => ({
   // Mảng URL tất cả ảnh theo thứ tự displayOrder
   images: Array.isArray(post.media)
     ? post.media
-        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-        .map((m) => m.imageUrl)
+      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+      .map((m) => m.imageUrl)
     : [],
   imageAspect: '16/9',
   imageColor: getColorFromId(post.id),
-  liked: false,
+  liked: Array.isArray(post.likes) && post.likes.length > 0,
   likes: formatCount(post.likeCount ?? 0),
   comments: post.commentCount ?? 0,
   shares: 0,
-  saved: false,
+  saved: Array.isArray(post.savedBy) && post.savedBy.length > 0,
   pinned: false,
 })
 
@@ -99,15 +99,17 @@ export const getUserPosts = async (userId, limit = 10, offset = 0, requesterId =
     followingIds = followed.map(f => f.followingId)
   }
 
+  const orConditions = [{ visibility: 'PUBLIC' }]
+  if (requesterId) {
+    orConditions.push({ visibility: 'PRIVATE', userId: requesterId })
+    orConditions.push({ visibility: 'FRIENDS', userId: { in: [requesterId, ...followingIds] } })
+  }
+
   const posts = await prisma.post.findMany({
-    where: { 
+    where: {
       userId,
       isDeleted: false,
-      OR: [
-        { visibility: 'PUBLIC' },
-        { visibility: 'PRIVATE', userId: requesterId },
-        { visibility: 'FRIENDS', userId: { in: requesterId ? [requesterId, ...followingIds] : [] } }
-      ]
+      OR: orConditions
     },
     orderBy: { createdAt: 'desc' },
     take: limit,
@@ -123,13 +125,21 @@ export const getUserPosts = async (userId, limit = 10, offset = 0, requesterId =
         },
       },
       media: true,
+      likes: requesterId ? {
+        where: { userId: requesterId },
+        select: { userId: true },
+      } : false,
+      savedBy: requesterId ? {
+        where: { userId: requesterId },
+        select: { userId: true },
+      } : false,
     },
   })
 
   return posts.map(buildPostResponse)
 }
 
-export const getPost = async (postId) => {
+export const getPost = async (postId, requesterId = null) => {
   const post = await prisma.post.findUnique({
     where: { id: postId },
     include: {
@@ -143,6 +153,14 @@ export const getPost = async (postId) => {
         },
       },
       media: true,
+      likes: requesterId ? {
+        where: { userId: requesterId },
+        select: { userId: true },
+      } : false,
+      savedBy: requesterId ? {
+        where: { userId: requesterId },
+        select: { userId: true },
+      } : false,
     },
   })
 
@@ -198,4 +216,96 @@ export const createPost = async (userId, { content, visibility = 'PUBLIC' }, fil
     return created
   })
   return buildPostResponse(post)
+}
+
+export const toggleLike = async (userId, postId) => {
+  const existingLike = await prisma.postLike.findUnique({
+    where: {
+      userId_postId: {
+        userId,
+        postId,
+      },
+    },
+  })
+
+  if (existingLike) {
+    // Đã like -> Xoá like (Unlike)
+    await prisma.$transaction([
+      prisma.postLike.delete({
+        where: { userId_postId: { userId, postId } },
+      }),
+      prisma.post.update({
+        where: { id: postId },
+        data: { likeCount: { decrement: 1 } },
+      }),
+    ])
+    return { liked: false }
+  } else {
+    // Chưa like -> Thêm like (Like)
+    await prisma.$transaction([
+      prisma.postLike.create({
+        data: { userId, postId },
+      }),
+      prisma.post.update({
+        where: { id: postId },
+        data: { likeCount: { increment: 1 } },
+      }),
+    ])
+    return { liked: true }
+  }
+}
+
+export const getSavedPosts = async (userId, limit = 10, offset = 0) => {
+  const saved = await prisma.savedPost.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    skip: offset,
+    include: {
+      post: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              displayName: true,
+              email: true,
+              avatarUrl: true,
+              postsCount: true,
+            },
+          },
+          media: { select: { imageUrl: true, displayOrder: true } },
+          likes: { where: { userId }, select: { userId: true } },
+          savedBy: { where: { userId }, select: { userId: true } },
+        },
+      },
+    },
+  })
+
+  // Filter out any posts that might have been hard-deleted but orphaned the SavedPost
+  return saved.map((s) => s.post).filter(Boolean).map(buildPostResponse)
+}
+
+export const toggleSavePost = async (userId, postId) => {
+  const existing = await prisma.savedPost.findUnique({
+    where: {
+      userId_postId: {
+        userId,
+        postId,
+      },
+    },
+  })
+
+  if (existing) {
+    // Already saved -> Unsave
+    await prisma.savedPost.delete({
+      where: { userId_postId: { userId, postId } },
+    })
+    return { saved: false }
+  } else {
+    // Not saved -> Save
+    await prisma.savedPost.create({
+      data: { userId, postId },
+    })
+    return { saved: true }
+  }
 }

@@ -102,7 +102,16 @@ export default {
 
     return api.post('/api/posts', { content, visibility }).then((r) => r.data?.data)
   },
+  toggleLikePost: (postId) => api.post(`/api/posts/${postId}/like`).then((r) => r.data?.data),
+  toggleSavePost: (postId) => api.post(`/api/posts/${postId}/save`).then((r) => r.data?.data),
+  getSavedPosts: (limit = 10, offset = 0) => api.get('/api/posts/saved', { params: { limit, offset } }).then((r) => r.data?.data),
   updateProfile: (data) => api.patch('/api/users/me', data).then((r) => r.data?.data),
   updateUsername: (username) => api.patch('/api/users/me/username', { username }).then((r) => r.data),
+  getPostComments: (postId, limit = 10, offset = 0) => api.get(`/api/comments/post/${postId}`, { params: { limit, offset } }).then((r) => r.data?.data),
+  createComment: (postId, content) => api.post(`/api/comments/post/${postId}`, { content }).then((r) => r.data?.data),
+  getCommentReplies: (commentId, limit = 10, offset = 0) => api.get(`/api/comments/${commentId}/replies`, { params: { limit, offset } }).then((r) => r.data?.data),
+  createReply: (commentId, content) => api.post(`/api/comments/${commentId}/replies`, { content }).then((r) => r.data?.data),
+  deleteComment: (commentId) => api.delete(`/api/comments/${commentId}`).then((r) => r.data?.data),
+  toggleLikeComment: (commentId) => api.post(`/api/comments/${commentId}/like`).then((r) => r.data?.data),
   _raw: api,
 }

@@ -41,6 +41,7 @@ model User {
   postLikes        PostLike[]
   posts            Post[]
   refreshTokens    RefreshToken[]
+  savedPosts       SavedPost[]
 
   @@map("users")
 }
@@ -84,6 +85,7 @@ model Post {
   comments     Comment[]
   media        Media[]
   likes        PostLike[]
+  savedBy      SavedPost[]
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId], map: "idx_posts_user")
@@ -135,6 +137,17 @@ model PostLike {
 
   @@id([userId, postId])
   @@map("post_likes")
+}
+
+model SavedPost {
+  userId    String    @map("user_id") @db.Uuid
+  postId    String    @map("post_id") @db.Uuid
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, postId])
+  @@map("saved_posts")
 }
 
 model CommentLike {

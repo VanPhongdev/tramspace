@@ -5,14 +5,23 @@ import {
   getUserPostsHandler,
   getPostHandler,
   createPostHandler,
+  toggleLikeHandler,
+  toggleSaveHandler,
+  getSavedPostsHandler,
 } from './posts.controller.js'
 
 const router = Router()
 
 router.get('/users/:id/posts', softAuthenticate, getUserPostsHandler)
 
+router.get('/saved', authenticate, getSavedPostsHandler)
+
 router.get('/:id', getPostHandler)
 
 router.post('/', authenticate, upload.array('images', 10), createPostHandler)
+
+router.post('/:id/like', authenticate, toggleLikeHandler)
+
+router.post('/:id/save', authenticate, toggleSaveHandler)
 
 export default router

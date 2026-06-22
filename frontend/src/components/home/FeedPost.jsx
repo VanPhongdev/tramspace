@@ -1,29 +1,59 @@
 import { useState } from 'react';
 import UserAvatar from '../UserAvatar';
+import api from '../../lib/api';
+import PostDetailModal from './PostDetailModal';
 
 /**
  * FeedPost — Post card dùng chung cho HomePage và ProfilePage.
  * Props: post (object), showPinned (bool), compact (bool)
  */
-export default function FeedPost({ post, showPinned = false }) {
+export default function FeedPost({ post, showPinned = false, currentUser, isModalView = false, onFocusComment }) {
   const [liked, setLiked] = useState(post.liked ?? false);
   const [saved, setSaved] = useState(post.saved ?? false);
   const [likeCount, setLikeCount] = useState(post.likes ?? 0);
+  const [commentCount, setCommentCount] = useState(post.comments ?? 0);
+  const [showModal, setShowModal] = useState(false);
 
-  const toggleLike = () => {
-    setLiked((currentLiked) => {
-      const nextLiked = !currentLiked;
-      setLikeCount((count) => count + (nextLiked ? 1 : -1));
-      return nextLiked;
+  const toggleLike = async () => {
+    const wasLiked = liked;
+    const nextLiked = !wasLiked;
+    
+    // Optimistic UI update
+    setLiked(nextLiked);
+    setLikeCount((prev) => {
+      if (typeof prev === 'string' && (prev.includes('k') || prev.includes('M'))) return prev;
+      const num = parseInt(prev, 10) || 0;
+      return num + (nextLiked ? 1 : -1);
     });
+
+    try {
+      // Call backend API
+      await api.toggleLikePost(post.id);
+    } catch (err) {
+      console.error('Lỗi khi like bài viết:', err);
+      // Rollback on failure
+      setLiked(wasLiked);
+      setLikeCount((prev) => {
+        if (typeof prev === 'string' && (prev.includes('k') || prev.includes('M'))) return prev;
+        const num = parseInt(prev, 10) || 0;
+        return num + (wasLiked ? 1 : -1);
+      });
+    }
   };
 
-  const toggleSave = () => {
-    setSaved((currentSaved) => !currentSaved);
+  const toggleSave = async () => {
+    const wasSaved = saved;
+    setSaved(!wasSaved);
+    try {
+      await api.toggleSavePost(post.id);
+    } catch (err) {
+      console.error('Lỗi khi lưu bài viết:', err);
+      setSaved(wasSaved);
+    }
   };
 
   return (
-    <article className="feed-post">
+    <article className="feed-post" style={isModalView ? { margin: 0, borderRadius: 0, border: 'none', boxShadow: 'none' } : {}}>
       {/* Pinned banner */}
       {showPinned && post.pinned && (
         <div className="feed-post-pinned-banner">
@@ -120,9 +150,19 @@ export default function FeedPost({ post, showPinned = false }) {
             <span>Thích ({likeCount})</span>
           </button>
 
-          <button className="feed-action-btn" aria-label="Bình luận">
+          <button 
+            className="feed-action-btn" 
+            aria-label="Bình luận"
+            onClick={() => {
+              if (isModalView && onFocusComment) {
+                onFocusComment();
+              } else {
+                setShowModal(true);
+              }
+            }}
+          >
             <span className="material-symbols-outlined">chat_bubble</span>
-            <span>Bình luận ({post.comments})</span>
+            <span>Bình luận ({commentCount})</span>
           </button>
 
           <button className="feed-action-btn secondary" aria-label="Chia sẻ">
@@ -144,6 +184,16 @@ export default function FeedPost({ post, showPinned = false }) {
           </span>
         </button>
       </div>
+
+      {showModal && !isModalView && (
+        <PostDetailModal
+          post={post}
+          currentUser={currentUser}
+          initialCommentCount={commentCount}
+          onCommentCountChange={(change) => setCommentCount(prev => prev + change)}
+          onClose={() => setShowModal(false)}
+        />
+      )}
     </article>
   );
 }

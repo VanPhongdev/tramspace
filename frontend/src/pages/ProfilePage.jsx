@@ -33,7 +33,12 @@ export default function ProfilePage() {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('Bài viết')
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const { setUser: setAuthUser } = useAuth()
+  const { user: currentUser, setUser: setAuthUser } = useAuth()
+  
+  const [savedPosts, setSavedPosts] = useState([])
+  const [loadingSaved, setLoadingSaved] = useState(false)
+
+  const isOwnProfile = currentUser && user && currentUser.id === user.id
 
   useEffect(() => {
     let active = true
@@ -58,6 +63,16 @@ export default function ProfilePage() {
 
     return () => { active = false }
   }, [handle])
+
+  useEffect(() => {
+    if (activeTab === 'Đã lưu' && isOwnProfile) {
+      setLoadingSaved(true)
+      api.getSavedPosts()
+        .then(data => setSavedPosts(Array.isArray(data) ? data : []))
+        .catch(err => console.error(err))
+        .finally(() => setLoadingSaved(false))
+    }
+  }, [activeTab, isOwnProfile])
 
   /* Sau khi cập nhật profile thành công, nếu username thay đổi thì redirect */
   const handleProfileUpdated = (updatedUser) => {
@@ -277,7 +292,7 @@ export default function ProfilePage() {
 
           {/* Tab bar */}
           <nav className="profile-tabs">
-            {TABS.map((tab) => (
+            {TABS.filter(tab => tab !== 'Đã lưu' || isOwnProfile).map((tab) => (
               <button
                 key={tab}
                 className={`profile-tab ${activeTab === tab ? 'active' : ''}`}
@@ -297,6 +312,7 @@ export default function ProfilePage() {
                     <FeedPost
                       key={post.id}
                       post={post}
+                      currentUser={currentUser}
                       showPinned
                     />
                   ))}
@@ -323,6 +339,28 @@ export default function ProfilePage() {
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#888', gridColumn: '1 / -1' }}>
                   Chưa có ảnh nào
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'Đã lưu' && isOwnProfile && (
+            <div className="feed-list">
+              {loadingSaved ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Đang tải...</div>
+              ) : savedPosts && savedPosts.length > 0 ? (
+                <>
+                  {savedPosts.map((post) => (
+                    <FeedPost
+                      key={post.id}
+                      post={post}
+                      currentUser={currentUser}
+                    />
+                  ))}
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                  Chưa có bài viết nào được lưu
                 </div>
               )}
             </div>
@@ -469,7 +507,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {!['Bài viết', 'Ảnh', 'Giới thiệu'].includes(activeTab) && (
+          {!['Bài viết', 'Ảnh', 'Giới thiệu', 'Đã lưu'].includes(activeTab) && (
             <div className="tab-placeholder">
               <span className="material-symbols-outlined">construction</span>
               <p>Nội dung {activeTab.toLowerCase()} đang được xây dựng.</p>
