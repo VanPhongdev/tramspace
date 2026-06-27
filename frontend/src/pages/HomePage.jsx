@@ -257,7 +257,19 @@ export default function HomePage({ view = 'feed' }) {
         <div className="feed-list">
           {feedPosts && feedPosts.length > 0 ? (
             feedPosts.map((post) => (
-              <FeedPost key={post.id} post={post} currentUser={currentUser} />
+              <FeedPost
+                key={post.id}
+                post={post}
+                currentUser={currentUser}
+                onPostDeleted={(id) => setHomeData((prev) => ({
+                  ...prev,
+                  feedPosts: prev.feedPosts.filter((p) => p.id !== id),
+                }))}
+                onPostUpdated={(updated) => setHomeData((prev) => ({
+                  ...prev,
+                  feedPosts: prev.feedPosts.map((p) => p.id === updated.id ? updated : p),
+                }))}
+              />
             ))
           ) : (
             <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>

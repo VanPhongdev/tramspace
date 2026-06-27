@@ -83,3 +83,26 @@ export const getSavedPostsHandler = async (req, res, next) => {
     next(err)
   }
 }
+
+export const updatePostHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { content, visibility } = req.body
+    const post = await postsService.updatePost(req.user.userId, id, { content, visibility })
+    res.json({ success: true, data: post })
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ success: false, message: err.message })
+    next(err)
+  }
+}
+
+export const deletePostHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const result = await postsService.deletePost(req.user.userId, id)
+    res.json({ success: true, data: result })
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ success: false, message: err.message })
+    next(err)
+  }
+}

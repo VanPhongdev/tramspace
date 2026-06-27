@@ -314,6 +314,8 @@ export default function ProfilePage() {
                       post={post}
                       currentUser={currentUser}
                       showPinned
+                      onPostDeleted={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+                      onPostUpdated={(updated) => setPosts((prev) => prev.map((p) => p.id === updated.id ? updated : p))}
                     />
                   ))}
                 </>
@@ -355,6 +357,8 @@ export default function ProfilePage() {
                       key={post.id}
                       post={post}
                       currentUser={currentUser}
+                      onPostDeleted={(id) => setSavedPosts((prev) => prev.filter((p) => p.id !== id))}
+                      onPostUpdated={(updated) => setSavedPosts((prev) => prev.map((p) => p.id === updated.id ? updated : p))}
                     />
                   ))}
                 </>

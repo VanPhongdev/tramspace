@@ -255,6 +255,45 @@ export const toggleLike = async (userId, postId) => {
   }
 }
 
+export const updatePost = async (userId, postId, { content, visibility }) => {
+  const post = await prisma.post.findUnique({ where: { id: postId } })
+  if (!post) throw Object.assign(new Error('Không tìm thấy bài viết'), { status: 404 })
+  if (post.userId !== userId) throw Object.assign(new Error('Không có quyền chỉnh sửa bài viết này'), { status: 403 })
+
+  const updated = await prisma.post.update({
+    where: { id: postId },
+    data: {
+      ...(content !== undefined && { content }),
+      ...(visibility !== undefined && { visibility }),
+    },
+    include: {
+      user: {
+        select: { id: true, displayName: true, email: true, avatarUrl: true, postsCount: true },
+      },
+      media: true,
+    },
+  })
+  return buildPostResponse(updated)
+}
+
+export const deletePost = async (userId, postId) => {
+  const post = await prisma.post.findUnique({ where: { id: postId } })
+  if (!post) throw Object.assign(new Error('Không tìm thấy bài viết'), { status: 404 })
+  if (post.userId !== userId) throw Object.assign(new Error('Không có quyền xóa bài viết này'), { status: 403 })
+
+  await prisma.$transaction([
+    prisma.post.update({
+      where: { id: postId },
+      data: { isDeleted: true, deletedAt: new Date() },
+    }),
+    prisma.user.update({
+      where: { id: userId },
+      data: { postsCount: { decrement: 1 } },
+    }),
+  ])
+  return { deleted: true }
+}
+
 export const getSavedPosts = async (userId, limit = 10, offset = 0) => {
   const saved = await prisma.savedPost.findMany({
     where: { userId },

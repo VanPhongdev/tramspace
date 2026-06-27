@@ -105,6 +105,8 @@ export default {
   toggleLikePost: (postId) => api.post(`/api/posts/${postId}/like`).then((r) => r.data?.data),
   toggleSavePost: (postId) => api.post(`/api/posts/${postId}/save`).then((r) => r.data?.data),
   getSavedPosts: (limit = 10, offset = 0) => api.get('/api/posts/saved', { params: { limit, offset } }).then((r) => r.data?.data),
+  updatePost: (postId, data) => api.patch(`/api/posts/${postId}`, data).then((r) => r.data?.data),
+  deletePost: (postId) => api.delete(`/api/posts/${postId}`).then((r) => r.data?.data),
   updateProfile: (data) => api.patch('/api/users/me', data).then((r) => r.data?.data),
   updateUsername: (username) => api.patch('/api/users/me/username', { username }).then((r) => r.data),
   getPostComments: (postId, limit = 10, offset = 0) => api.get(`/api/comments/post/${postId}`, { params: { limit, offset } }).then((r) => r.data?.data),

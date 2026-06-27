@@ -2281,6 +2281,7 @@ body {
   display: grid;
   gap: 2px;
   overflow: hidden;
+  border-radius: 0 0 16px 16px;
 }
 
 /* 1 ảnh: full width 16:9 */
@@ -2360,7 +2361,7 @@ body {
 .feed-post {
   background: var(--color-surface-container-lowest);
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
 }
 
@@ -2463,6 +2464,7 @@ body {
   align-items: center;
   padding: 10px 16px;
   border-top: 1px solid var(--color-outline-variant);
+  border-radius: 0 0 16px 16px;
 }
 
 .feed-actions-left {

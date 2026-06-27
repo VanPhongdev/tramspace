@@ -8,6 +8,8 @@ import {
   toggleLikeHandler,
   toggleSaveHandler,
   getSavedPostsHandler,
+  updatePostHandler,
+  deletePostHandler,
 } from './posts.controller.js'
 
 const router = Router()
@@ -23,5 +25,9 @@ router.post('/', authenticate, upload.array('images', 10), createPostHandler)
 router.post('/:id/like', authenticate, toggleLikeHandler)
 
 router.post('/:id/save', authenticate, toggleSaveHandler)
+
+router.patch('/:id', authenticate, updatePostHandler)
+
+router.delete('/:id', authenticate, deletePostHandler)
 
 export default router
