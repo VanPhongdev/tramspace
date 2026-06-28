@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import UserAvatar from '../UserAvatar';
 import api from '../../lib/api';
 import PostDetailModal from './PostDetailModal';
@@ -27,6 +28,13 @@ export default function FeedPost({ post, showPinned = false, currentUser, isModa
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const isAuthor = currentUser?.id === post.author?.id;
+  const navigate = useNavigate();
+
+  const goToProfile = (e) => {
+    e.stopPropagation();
+    const handle = post.author?.username || post.author?.id;
+    if (handle) navigate(`/profile/${handle}`);
+  };
 
   // Close menu on outside click
   useEffect(() => {
@@ -108,16 +116,31 @@ export default function FeedPost({ post, showPinned = false, currentUser, isModa
         {/* Header */}
         <div className="feed-post-header">
           <div className="feed-post-author">
-            <UserAvatar
-              avatarUrl={post.author?.avatarUrl}
-              initials={post.author?.initials}
-              color={post.author?.color ?? '#006b5f'}
-              size={42}
-              className="feed-avatar"
-            />
+            {/* Avatar — click để xem profile */}
+            <span
+              onClick={goToProfile}
+              style={{ cursor: 'pointer', display: 'flex', flexShrink: 0 }}
+              title={`Xem trang cá nhân ${post.author?.name}`}
+            >
+              <UserAvatar
+                avatarUrl={post.author?.avatarUrl}
+                initials={post.author?.initials}
+                color={post.author?.color ?? '#006b5f'}
+                size={42}
+                className="feed-avatar"
+              />
+            </span>
             <div>
               <div className="feed-author-meta">
-                <span className="feed-author-name">{post.author?.name}</span>
+                {/* Tên — click để xem profile */}
+                <span
+                  className="feed-author-name"
+                  onClick={goToProfile}
+                  style={{ cursor: 'pointer' }}
+                  title={`Xem trang cá nhân ${post.author?.name}`}
+                >
+                  {post.author?.name}
+                </span>
                 {post.author?.badge && (
                   <span
                     className="feed-author-badge"

@@ -1,12 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import UserAvatar from '../UserAvatar';
 import api from '../../lib/api';
 import FeedPost from './FeedPost';
+import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export default function PostDetailModal({ post, currentUser, onClose, initialCommentCount, onCommentCountChange }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState('');
+  const toast = useToast();
+  const confirm = useConfirm();
   const [posting, setPosting] = useState(false);
   const [commentCount, setCommentCount] = useState(initialCommentCount);
 
@@ -46,20 +51,28 @@ export default function PostDetailModal({ post, currentUser, onClose, initialCom
       onCommentCountChange?.(1);
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Có lỗi khi gửi bình luận');
+      toast.error(err.response?.data?.message || 'Có lỗi khi gửi bình luận');
     } finally {
       setPosting(false);
     }
   };
 
   const handleDelete = async (commentId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa bình luận này?')) return;
+    const isConfirmed = await confirm({
+      title: 'Xóa bình luận',
+      message: 'Bạn có chắc chắn muốn xóa bình luận này?',
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!isConfirmed) return;
     try {
-      const deleted = await api.deleteComment(commentId);
-      setComments(prev => prev.map(c => c.id === commentId ? deleted : c));
+      await api.deleteComment(commentId);
+      setComments(prev => prev.filter(c => c.id !== commentId));
+      if (onCommentCountChange) onCommentCountChange(-1);
+      toast.success('Đã xóa bình luận');
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Lỗi khi xóa bình luận');
+      toast.error(err.response?.data?.message || 'Lỗi khi xóa bình luận');
     }
   };
 
@@ -226,6 +239,8 @@ function CommentItem({ comment, currentUser, onDelete }) {
   const [postingReply, setPostingReply] = useState(false);
   const [showReplyInput, setShowReplyInput] = useState(false);
   const replyInputRef = useRef(null);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [liked, setLiked] = useState(comment.liked ?? false);
   const [likeCount, setLikeCount] = useState(comment.likeCount ?? 0);
@@ -277,19 +292,27 @@ function CommentItem({ comment, currentUser, onDelete }) {
       setShowReplies(true);
     } catch (err) {
       console.error(err);
-      alert('Có lỗi khi gửi phản hồi');
+      toast.error('Có lỗi khi gửi phản hồi');
     } finally {
       setPostingReply(false);
     }
   };
 
   const handleReplyDelete = async (replyId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa phản hồi này?')) return;
+    const isConfirmed = await confirm({
+      title: 'Xóa phản hồi',
+      message: 'Bạn có chắc chắn muốn xóa phản hồi này?',
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!isConfirmed) return;
     try {
-      const deleted = await api.deleteComment(replyId);
-      setReplies(prev => prev.map(r => r.id === replyId ? deleted : r));
+      await api.deleteComment(replyId);
+      setReplies(prev => prev.filter(r => r.id !== replyId));
+      toast.success('Đã xóa phản hồi');
     } catch (err) {
       console.error(err);
+      toast.error(err.response?.data?.message || 'Lỗi khi xóa phản hồi');
     }
   };
 
@@ -307,19 +330,33 @@ function CommentItem({ comment, currentUser, onDelete }) {
   }
 
   const isAuthor = currentUser?.id === comment.author?.id;
+  const navigate = useNavigate();
+  const goToProfile = () => {
+    const handle = comment.author?.username || comment.author?.id;
+    if (handle) navigate(`/profile/${handle}`);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'flex', gap: 8 }}>
-        <UserAvatar
-          avatarUrl={comment.author?.avatarUrl}
-          initials={comment.author?.initials}
-          color={comment.author?.color}
-          size={36}
-        />
+        {/* Avatar — click để xem profile */}
+        <span onClick={goToProfile} style={{ cursor: 'pointer', flexShrink: 0 }}>
+          <UserAvatar
+            avatarUrl={comment.author?.avatarUrl}
+            initials={comment.author?.initials}
+            color={comment.author?.color}
+            size={36}
+          />
+        </span>
         <div>
           <div style={{ background: '#f0f2f5', padding: '8px 12px', borderRadius: 18, fontSize: 15 }}>
-            <div style={{ fontWeight: 600, marginBottom: 2 }}>{comment.author?.name}</div>
+            {/* Tên — click để xem profile */}
+            <div
+              style={{ fontWeight: 600, marginBottom: 2, cursor: 'pointer', display: 'inline-block' }}
+              onClick={goToProfile}
+            >
+              {comment.author?.name}
+            </div>
             <div>{comment.content}</div>
           </div>
           <div style={{ display: 'flex', gap: 16, paddingLeft: 12, marginTop: 4, fontSize: 13, color: 'var(--color-text-light)', fontWeight: 600 }}>
@@ -428,17 +465,24 @@ function ReplyItem({ reply, currentUser, onDelete }) {
   }
 
   const isReplyAuthor = currentUser?.id === reply.author?.id;
+  const navigate = useNavigate();
+  const goToProfile = () => {
+    const handle = reply.author?.username || reply.author?.id;
+    if (handle) navigate(`/profile/${handle}`);
+  };
   return (
     <div style={{ display: 'flex', gap: 8 }}>
-      <UserAvatar
-        avatarUrl={reply.author?.avatarUrl}
-        initials={reply.author?.initials}
-        color={reply.author?.color}
-        size={28}
-      />
+      <span onClick={goToProfile} style={{ cursor: 'pointer', flexShrink: 0 }}>
+        <UserAvatar
+          avatarUrl={reply.author?.avatarUrl}
+          initials={reply.author?.initials}
+          color={reply.author?.color}
+          size={28}
+        />
+      </span>
       <div>
         <div style={{ background: '#f0f2f5', padding: '6px 12px', borderRadius: 16, fontSize: 14 }}>
-          <div style={{ fontWeight: 600, marginBottom: 2 }}>{reply.author?.name}</div>
+          <div style={{ fontWeight: 600, marginBottom: 2, cursor: 'pointer', display: 'inline-block' }} onClick={goToProfile}>{reply.author?.name}</div>
           <div>{reply.content}</div>
         </div>
         <div style={{ display: 'flex', gap: 12, paddingLeft: 10, marginTop: 4, fontSize: 12, color: 'var(--color-text-light)', fontWeight: 600 }}>

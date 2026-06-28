@@ -103,7 +103,9 @@ export default function Navbar() {
       <div className="navbar-right">
         {/* Messages */}
         <button className="navbar-action-btn" title="Tin nhắn" aria-label="Tin nhắn">
-          <span className="material-symbols-outlined">chat</span>
+          <svg viewBox="0 0 36 36" fill="currentColor" height="20" width="20">
+            <path d="M18 4C10.268 4 4 9.873 4 17.118c0 4.12 2.052 7.794 5.253 10.222.259.197.435.485.492.81l.666 3.791c.145.827 1.054 1.258 1.77.838l4.13-2.428a1.218 1.218 0 0 1 .918-.124 14.618 14.618 0 0 0 2.766.216c7.732 0 14-5.872 14-13.113C34 9.873 27.732 4 18 4zm3.932 17.534-3.526-3.766a1.25 1.25 0 0 0-1.742-.14l-4.717 3.655c-.752.583-1.73-.284-1.238-1.096l3.968-6.529a1.25 1.25 0 0 1 1.742-.423l3.526 3.766a1.25 1.25 0 0 0 1.742.14l4.717-3.655c.752-.583 1.73.284 1.238 1.096l-3.968 6.529a1.25 1.25 0 0 1-1.742.423z"/>
+          </svg>
           <span className="navbar-badge" aria-label="3 tin nhắn chưa đọc">3</span>
         </button>
 

@@ -4,6 +4,7 @@ import PageTransition from '../components/PageTransition';
 import AuthVisual from '../components/auth/AuthVisual';
 import InputField from '../components/auth/InputField';
 import SocialAuthButtons from '../components/auth/SocialAuthButtons';
+import { useToast } from '../context/ToastContext';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -17,6 +18,7 @@ export default function RegisterPage() {
   });
 
   const navigate = useNavigate()
+  const toast = useToast()
   const validateEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
   const today = new Date().toISOString().split('T')[0]
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -78,7 +80,7 @@ export default function RegisterPage() {
       api.register(payload)
         .then(() => {
           setIsSubmitting(false)
-          alert('Đăng ký thành công — hãy đăng nhập')
+          toast.success('Đăng ký thành công — hãy đăng nhập')
           navigate('/login')
         })
         .catch((err) => {

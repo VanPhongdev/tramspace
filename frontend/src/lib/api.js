@@ -115,5 +115,13 @@ export default {
   createReply: (commentId, content) => api.post(`/api/comments/${commentId}/replies`, { content }).then((r) => r.data?.data),
   deleteComment: (commentId) => api.delete(`/api/comments/${commentId}`).then((r) => r.data?.data),
   toggleLikeComment: (commentId) => api.post(`/api/comments/${commentId}/like`).then((r) => r.data?.data),
+  getUserFriends: (userId) => api.get(`/api/friends/user/${userId}`).then((r) => r.data?.data),
+  sendFriendRequest: (userId) => api.post(`/api/friends/request/${userId}`).then((r) => r.data),
+  cancelFriendRequest: (userId) => api.delete(`/api/friends/request/${userId}`).then((r) => r.data),
+  acceptFriendRequest: (userId) => api.post(`/api/friends/accept/${userId}`).then((r) => r.data),
+  rejectFriendRequest: (userId) => api.post(`/api/friends/reject/${userId}`).then((r) => r.data),
+  unfriend: (userId) => api.delete(`/api/friends/${userId}`).then((r) => r.data),
+  followUser: (userId) => api.post(`/api/users/${userId}/follow`).then((r) => r.data),
+  unfollowUser: (userId) => api.delete(`/api/users/${userId}/follow`).then((r) => r.data),
   _raw: api,
 }

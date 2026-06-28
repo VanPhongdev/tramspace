@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import FeedPost from '../components/home/FeedPost';
 import EditProfileModal from '../components/profile/EditProfileModal';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import UserAvatar from '../components/UserAvatar';
+import { useToast } from '../context/ToastContext';
 
 const TABS = ['Bài viết', 'Ảnh', 'Video', 'Đã lưu', 'Giới thiệu', 'Bạn bè'];
 
@@ -27,16 +29,27 @@ const getInitials = (name) => {
 export default function ProfilePage() {
   const { handle } = useParams()
   const navigate = useNavigate()
+  const { user: currentUser, setUser: setAuthUser } = useAuth()
+  const toast = useToast();
   const [user, setUser] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('Bài viết')
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const { user: currentUser, setUser: setAuthUser } = useAuth()
   
   const [savedPosts, setSavedPosts] = useState([])
   const [loadingSaved, setLoadingSaved] = useState(false)
+  const [friendActionLoading, setFriendActionLoading] = useState(false)
+  
+  const [friends, setFriends] = useState([])
+  const [loadingFriends, setLoadingFriends] = useState(false)
+  const [friendsFetched, setFriendsFetched] = useState(false)
+  
+  const [friendDropdownOpen, setFriendDropdownOpen] = useState(false)
+  const [unfriendModalOpen, setUnfriendModalOpen] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
+  const friendDropdownRef = useRef(null)
 
   const isOwnProfile = currentUser && user && currentUser.id === user.id
 
@@ -107,6 +120,88 @@ export default function ProfilePage() {
     });
     return unique;
   }, [user, posts]);
+
+  const handleFriendAction = async () => {
+    if (friendActionLoading || !user) return;
+    if (user.friendshipStatus === 'FRIENDS') {
+      setFriendDropdownOpen(prev => !prev);
+      return;
+    }
+    setFriendActionLoading(true);
+    try {
+      if (!user.friendshipStatus || user.friendshipStatus === 'NONE') {
+        await api.sendFriendRequest(user.id);
+        setUser(prev => ({ ...prev, friendshipStatus: 'PENDING_SENT' }));
+      } else if (user.friendshipStatus === 'PENDING_SENT') {
+        await api.cancelFriendRequest(user.id);
+        setUser(prev => ({ ...prev, friendshipStatus: 'NONE' }));
+      } else if (user.friendshipStatus === 'PENDING_RECEIVED') {
+        await api.acceptFriendRequest(user.id);
+        setUser(prev => ({ ...prev, friendshipStatus: 'FRIENDS', isFollowing: true, friendsCount: (prev.friendsCount || 0) + 1 }));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setFriendActionLoading(false);
+    }
+  };
+
+  const confirmUnfriend = async () => {
+    if (!user) return;
+    try {
+      await api.unfriend(user.id);
+      setUser(prev => ({ ...prev, friendshipStatus: 'NONE', isFollowing: false, friendsCount: Math.max(0, (prev.friendsCount || 0) - 1) }));
+      setUnfriendModalOpen(false);
+      setFriendDropdownOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
+    }
+  };
+
+  const handleFollowToggle = async () => {
+    if (followLoading || !user) return;
+    setFollowLoading(true);
+    try {
+      if (user.isFollowing) {
+        await api.unfollowUser(user.id);
+        setUser(prev => ({ ...prev, isFollowing: false }));
+      } else {
+        await api.followUser(user.id);
+        setUser(prev => ({ ...prev, isFollowing: true }));
+      }
+      setFriendDropdownOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (friendDropdownRef.current && !friendDropdownRef.current.contains(event.target)) {
+        setFriendDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'Bạn bè' && user && !friendsFetched) {
+      setLoadingFriends(true);
+      api.getUserFriends(user.id)
+        .then(data => {
+          setFriends(data);
+          setFriendsFetched(true);
+        })
+        .catch(err => console.error(err))
+        .finally(() => setLoadingFriends(false));
+    }
+  }, [activeTab, user, friendsFetched]);
 
   if (loading) {
     return (
@@ -199,13 +294,85 @@ export default function ProfilePage() {
               </p>
             </div>
             <div className="profile-actions">
-              <button
-                className="btn-primary profile-edit-btn"
-                onClick={() => setIsEditOpen(true)}
-              >
-                <span className="material-symbols-outlined">edit</span>
-                {' '}Chỉnh sửa
-              </button>
+              {isOwnProfile ? (
+                <button
+                  className="btn-primary profile-edit-btn"
+                  onClick={() => setIsEditOpen(true)}
+                >
+                  <span className="material-symbols-outlined">edit</span>
+                  {' '}Chỉnh sửa
+                </button>
+              ) : (
+                <>
+                  <div style={{ position: 'relative' }} ref={friendDropdownRef}>
+                    <button
+                      className="btn-primary profile-edit-btn"
+                      onClick={handleFriendAction}
+                      disabled={friendActionLoading}
+                      style={user.friendshipStatus === 'FRIENDS' || user.friendshipStatus === 'PENDING_SENT' ? { background: 'var(--color-surface-container-high)', color: 'var(--color-text)' } : {}}
+                    >
+                      <span className="material-symbols-outlined">
+                        {(!user.friendshipStatus || user.friendshipStatus === 'NONE') ? 'person_add' :
+                         user.friendshipStatus === 'PENDING_SENT' ? 'person_cancel' :
+                         user.friendshipStatus === 'PENDING_RECEIVED' ? 'person_check' :
+                         'person_check'}
+                      </span>
+                      {' '}
+                      {(!user.friendshipStatus || user.friendshipStatus === 'NONE') ? 'Thêm bạn bè' :
+                       user.friendshipStatus === 'PENDING_SENT' ? 'Hủy lời mời' :
+                       user.friendshipStatus === 'PENDING_RECEIVED' ? 'Chấp nhận' :
+                       'Bạn bè'}
+                    </button>
+                    {friendDropdownOpen && (
+                      <div style={{
+                        position: 'absolute', top: 'calc(100% + 4px)', left: 0,
+                        background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                        borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        minWidth: '200px', zIndex: 50, padding: '8px',
+                        display: 'flex', flexDirection: 'column', gap: '4px'
+                      }}>
+                        <button 
+                          onClick={handleFollowToggle}
+                          disabled={followLoading}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '8px 12px', borderRadius: '6px', border: 'none',
+                            background: 'transparent', color: 'var(--color-text)',
+                            cursor: 'pointer', textAlign: 'left', fontSize: '14px', width: '100%'
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = 'var(--color-surface-container)'}
+                          onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <span className="material-symbols-outlined">{user.isFollowing ? 'cancel_presentation' : 'rss_feed'}</span>
+                          {user.isFollowing ? 'Bỏ theo dõi' : 'Theo dõi'}
+                        </button>
+                        <button 
+                          onClick={() => setUnfriendModalOpen(true)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '8px 12px', borderRadius: '6px', border: 'none',
+                            background: 'transparent', color: 'var(--color-text)',
+                            cursor: 'pointer', textAlign: 'left', fontSize: '14px', width: '100%'
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = 'var(--color-surface-container)'}
+                          onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <span className="material-symbols-outlined">person_remove</span>
+                          Hủy kết bạn
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <button
+                    className="btn-primary profile-edit-btn"
+                    style={{ background: '#0866ff', color: '#fff', border: 'none' }}
+                  >
+                    <svg viewBox="0 0 36 36" fill="currentColor" height="18" width="18"><path d="M18 4C10.268 4 4 9.873 4 17.118c0 4.12 2.052 7.794 5.253 10.222.259.197.435.485.492.81l.666 3.791c.145.827 1.054 1.258 1.77.838l4.13-2.428a1.218 1.218 0 0 1 .918-.124 14.618 14.618 0 0 0 2.766.216c7.732 0 14-5.872 14-13.113C34 9.873 27.732 4 18 4zm3.932 17.534-3.526-3.766a1.25 1.25 0 0 0-1.742-.14l-4.717 3.655c-.752.583-1.73-.284-1.238-1.096l3.968-6.529a1.25 1.25 0 0 1 1.742-.423l3.526 3.766a1.25 1.25 0 0 0 1.742.14l4.717-3.655c.752-.583 1.73.284 1.238 1.096l-3.968 6.529a1.25 1.25 0 0 1-1.742.423z"></path></svg>
+                    {' '}Nhắn tin
+                  </button>
+                </>
+              )}
               <button className="icon-btn" aria-label="Chia sẻ">
                 <span className="material-symbols-outlined">share</span>
               </button>
@@ -511,7 +678,47 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {!['Bài viết', 'Ảnh', 'Giới thiệu', 'Đã lưu'].includes(activeTab) && (
+          {activeTab === 'Bạn bè' && (
+            <div className="profile-about-tab" style={{ background: 'var(--color-surface)', padding: 24, borderRadius: 12, border: '1px solid var(--color-border)', color: 'var(--color-text)' }}>
+              <h2 style={{ marginBottom: 20, fontSize: 20, fontWeight: 600 }}>Bạn bè ({friends.length})</h2>
+              
+              {loadingFriends ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Đang tải...</div>
+              ) : friends.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
+                  {friends.map(friend => (
+                    <div 
+                      key={friend.id} 
+                      style={{ 
+                        display: 'flex', alignItems: 'center', gap: 12, padding: 16, 
+                        border: '1px solid var(--color-border)', borderRadius: 12, 
+                        background: 'var(--color-background)', cursor: 'pointer' 
+                      }}
+                      onClick={() => navigate(`/profile/${friend.username || friend.id}`)}
+                    >
+                      <UserAvatar
+                        avatarUrl={friend.avatarUrl}
+                        initials={getInitials(friend.name)}
+                        color={getColorFromId(friend.id)}
+                        size={60}
+                        className="feed-avatar"
+                      />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 16 }}>{friend.name}</div>
+                        {friend.username && <div style={{ fontSize: 13, color: 'var(--color-text-light)' }}>@{friend.username}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                  {isOwnProfile ? 'Bạn' : u.name} chưa có bạn bè nào.
+                </div>
+              )}
+            </div>
+          )}
+
+          {!['Bài viết', 'Ảnh', 'Giới thiệu', 'Đã lưu', 'Bạn bè'].includes(activeTab) && (
             <div className="tab-placeholder">
               <span className="material-symbols-outlined">construction</span>
               <p>Nội dung {activeTab.toLowerCase()} đang được xây dựng.</p>
@@ -528,6 +735,48 @@ export default function ProfilePage() {
         onClose={() => setIsEditOpen(false)}
         onUpdated={handleProfileUpdated}
       />
+
+      {/* Unfriend Modal */}
+      {unfriendModalOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(255,255,255,0.7)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: 'var(--color-surface)', width: '400px', borderRadius: '8px',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.1)', border: '1px solid var(--color-border)',
+            display: 'flex', flexDirection: 'column'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid var(--color-border)' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, textAlign: 'center', flex: 1 }}>Hủy kết bạn với {user.displayName || user.email}</h3>
+              <button 
+                onClick={() => setUnfriendModalOpen(false)}
+                style={{ background: 'var(--color-surface-container)', border: 'none', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div style={{ padding: '16px', fontSize: '15px', borderBottom: '1px solid var(--color-border)' }}>
+              Bạn có chắc chắn muốn hủy kết bạn với {user.displayName || user.email} không?
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', padding: '16px' }}>
+              <button
+                onClick={() => setUnfriendModalOpen(false)}
+                style={{ background: 'transparent', color: '#0866ff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmUnfriend}
+                style={{ background: '#0866ff', color: '#fff', border: 'none', padding: '8px 32px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
