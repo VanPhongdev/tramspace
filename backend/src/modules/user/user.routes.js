@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { authenticate } from '../../middlewares/auth.middleware.js'
+import { authenticate, softAuthenticate } from '../../middlewares/auth.middleware.js'
 import { validate } from '../../middlewares/validate.middleware.js'
 import { updateProfileSchema, updateUsernameSchema } from '../auth/auth.schema.js'
 import upload from '../../middlewares/upload.middleware.js'
@@ -10,6 +10,8 @@ import {
   getMeHandler,
   updateUsernameHandler,
   uploadCoverHandler,
+  followUserHandler,
+  unfollowUserHandler
 } from './user.controller.js'
 
 const router = Router()
@@ -18,8 +20,8 @@ const router = Router()
 // Phải đặt TRƯỚC /:handle vì Express match từ trên xuống
 router.get('/me', authenticate, getMeHandler)
 
-// GET /api/users/:handle — xem profile theo UUID hoặc username (không cần auth)
-router.get('/:handle', getProfileHandler)
+// GET /api/users/:handle — xem profile theo UUID hoặc username (không cần auth, nhưng có auth để lấy friendship status)
+router.get('/:handle', softAuthenticate, getProfileHandler)
 
 // PATCH /api/users/me — cập nhật profile (cần auth + validate)
 router.patch('/me', authenticate, validate(updateProfileSchema), updateProfileHandler)
@@ -34,5 +36,11 @@ router.post('/me/avatar', authenticate, upload.single('avatar'), uploadAvatarHan
 // POST /api/users/me/cover — upload ảnh bìa
 // upload.single('cover') là multer middleware — nhận file từ form-data field 'cover'
 router.post('/me/cover', authenticate, upload.single('cover'), uploadCoverHandler)
+
+// POST /api/users/:id/follow
+router.post('/:id/follow', authenticate, followUserHandler)
+
+// DELETE /api/users/:id/follow
+router.delete('/:id/follow', authenticate, unfollowUserHandler)
 
 export default router

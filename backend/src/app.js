@@ -9,6 +9,7 @@ import userRoutes from './modules/user/user.routes.js';
 import homeRoutes from './modules/home/home.routes.js';
 import postsRoutes from './modules/posts/posts.routes.js';
 import commentsRoutes from './modules/comments/comments.routes.js';
+import friendsRoutes from './modules/friends/friends.routes.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/comments', commentsRoutes);
+app.use('/api/friends', friendsRoutes);
 
 app.get('/health', (_, res) => {
   res.json({ status: 'ok' });

@@ -54,6 +54,7 @@ const buildCommentResponse = (comment) => {
     isDeleted: false,
     author: {
       id: comment.user?.id,
+      username: comment.user?.username || null,
       name: comment.user?.displayName || comment.user?.email || 'Người dùng',
       avatarUrl: comment.user?.avatarUrl || null,
       initials: getInitials(comment.user?.displayName || comment.user?.email || 'ND'),
@@ -134,6 +135,7 @@ export const createComment = async (userId, postId, content) => {
             email: true,
             avatarUrl: true,
             postsCount: true,
+            username: true,
           }
         }
       }
@@ -170,6 +172,7 @@ export const createReply = async (userId, commentId, content) => {
             email: true,
             avatarUrl: true,
             postsCount: true,
+            username: true,
           }
         }
       }
@@ -191,24 +194,31 @@ export const createReply = async (userId, commentId, content) => {
   return buildCommentResponse(reply)
 }
 
-export const softDeleteComment = async (userId, commentId) => {
+export const deleteComment = async (userId, commentId) => {
   const comment = await prisma.comment.findUnique({ where: { id: commentId } })
   if (!comment) throw { status: 404, message: 'Không tìm thấy bình luận' }
   if (comment.userId !== userId) throw { status: 403, message: 'Không có quyền xóa' }
-  if (comment.isDeleted) return buildCommentResponse(comment)
 
-  const deleted = await prisma.comment.update({
+  // Hard delete
+  await prisma.comment.delete({
     where: { id: commentId },
-    data: { 
-      isDeleted: true, 
-      deletedAt: new Date() 
-    },
-    include: {
-      user: true
-    }
   })
 
-  return buildCommentResponse(deleted)
+  // Nếu là bình luận gốc, giảm commentCount của post
+  if (!comment.parentCommentId) {
+    await prisma.post.update({
+      where: { id: comment.postId },
+      data: { commentCount: { decrement: 1 } }
+    }).catch(() => {})
+  } else {
+    // Nếu là reply, giảm replyCount của comment gốc
+    await prisma.comment.update({
+      where: { id: comment.parentCommentId },
+      data: { replyCount: { decrement: 1 } }
+    }).catch(() => {})
+  }
+
+  return { success: true }
 }
 
 export const toggleLikeComment = async (userId, commentId) => {

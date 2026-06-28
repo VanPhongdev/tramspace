@@ -25,6 +25,8 @@ const uploadImageToCloudinary = async (buffer) => {
 const buildPostResponse = (post) => ({
   id: post.id,
   author: {
+    id: post.user?.id,
+    username: post.user?.username || null,
     name: post.user?.displayName || post.user?.email || 'Người dùng',
     avatarUrl: post.user?.avatarUrl || null,
     initials: getInitials(post.user?.displayName || post.user?.email || 'ND'),
@@ -122,6 +124,7 @@ export const getUserPosts = async (userId, limit = 10, offset = 0, requesterId =
           email: true,
           avatarUrl: true,
           postsCount: true,
+          username: true,
         },
       },
       media: true,
@@ -150,6 +153,7 @@ export const getPost = async (postId, requesterId = null) => {
           email: true,
           avatarUrl: true,
           postsCount: true,
+          username: true,
         },
       },
       media: true,
@@ -185,6 +189,7 @@ export const createPost = async (userId, { content, visibility = 'PUBLIC' }, fil
           email: true,
           avatarUrl: true,
           postsCount: true,
+          username: true,
         },
       },
       media: true,
@@ -268,7 +273,7 @@ export const updatePost = async (userId, postId, { content, visibility }) => {
     },
     include: {
       user: {
-        select: { id: true, displayName: true, email: true, avatarUrl: true, postsCount: true },
+        select: { id: true, displayName: true, email: true, avatarUrl: true, postsCount: true, username: true },
       },
       media: true,
     },
@@ -277,15 +282,23 @@ export const updatePost = async (userId, postId, { content, visibility }) => {
 }
 
 export const deletePost = async (userId, postId) => {
-  const post = await prisma.post.findUnique({ where: { id: postId } })
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    include: { media: { select: { cloudinaryPublicId: true } } }
+  })
   if (!post) throw Object.assign(new Error('Không tìm thấy bài viết'), { status: 404 })
   if (post.userId !== userId) throw Object.assign(new Error('Không có quyền xóa bài viết này'), { status: 403 })
 
+  // Xóa ảnh trên Cloudinary trước
+  if (post.media?.length > 0) {
+    await Promise.allSettled(
+      post.media.map(m => cloudinary.uploader.destroy(m.cloudinaryPublicId))
+    )
+  }
+
+  // Hard-delete: xóa hẳn khỏi DB (cascade xóa media, comments, likes, savedPosts)
   await prisma.$transaction([
-    prisma.post.update({
-      where: { id: postId },
-      data: { isDeleted: true, deletedAt: new Date() },
-    }),
+    prisma.post.delete({ where: { id: postId } }),
     prisma.user.update({
       where: { id: userId },
       data: { postsCount: { decrement: 1 } },

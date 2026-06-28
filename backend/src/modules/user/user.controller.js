@@ -12,7 +12,7 @@ export const getMeHandler = async (req, res, next) => {
 // GET /api/users/:handle — tìm theo UUID hoặc username
 export const getProfileHandler = async (req, res, next) => {
   try {
-    const user = await userService.getProfileByHandle(req.params.handle)
+    const user = await userService.getProfileByHandle(req.params.handle, req.user?.userId)
     res.json({ success: true, data: user })
   } catch (err) { next(err) }
 }
@@ -65,5 +65,21 @@ export const uploadCoverHandler = async (req, res, next) => {
     }
     const user = await userService.uploadCover(req.user.userId, req.file.buffer)
     res.json({ success: true, data: user })
+  } catch (err) { next(err) }
+}
+
+// POST /api/users/:id/follow
+export const followUserHandler = async (req, res, next) => {
+  try {
+    const result = await userService.followUser(req.user.userId, req.params.id)
+    res.json({ success: true, data: result })
+  } catch (err) { next(err) }
+}
+
+// DELETE /api/users/:id/follow
+export const unfollowUserHandler = async (req, res, next) => {
+  try {
+    const result = await userService.unfollowUser(req.user.userId, req.params.id)
+    res.json({ success: true, data: result })
   } catch (err) { next(err) }
 }

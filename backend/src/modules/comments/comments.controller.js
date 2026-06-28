@@ -61,7 +61,7 @@ export const createReplyHandler = async (req, res, next) => {
 export const deleteCommentHandler = async (req, res, next) => {
   try {
     const { commentId } = req.params
-    const deleted = await commentsService.softDeleteComment(req.user.userId, commentId)
+    const deleted = await commentsService.deleteComment(req.user.userId, commentId)
     res.json({ success: true, data: deleted })
   } catch (err) {
     if (err.status) return res.status(err.status).json({ success: false, message: err.message })

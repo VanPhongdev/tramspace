@@ -78,9 +78,11 @@ export const getHomeData = async (userId) => {
     where: {
       isDeleted: false,
       OR: [
-        { visibility: 'PUBLIC' },
-        { visibility: 'PRIVATE', userId: userId },
-        { visibility: 'FRIENDS', userId: { in: [userId, ...followingIds] } },
+        // Bài viết của chính mình (mọi visibility)
+        { userId: userId },
+        // Bài của người mình đang follow (chỉ PUBLIC và FRIENDS)
+        { userId: { in: followingIds }, visibility: 'PUBLIC' },
+        { userId: { in: followingIds }, visibility: 'FRIENDS' },
       ],
     },
     orderBy: { createdAt: 'desc' },
@@ -93,6 +95,7 @@ export const getHomeData = async (userId) => {
           email: true,
           avatarUrl: true,
           postsCount: true,
+          username: true,
         },
       },
       media: {
@@ -113,6 +116,7 @@ export const getHomeData = async (userId) => {
     id: post.id,
     author: {
       id: post.user?.id,
+      username: post.user?.username || null,
       name: post.user?.displayName || post.user?.email || 'Người dùng',
       initials: getInitials(post.user?.displayName || post.user?.email || 'ND'),
       avatarUrl: post.user?.avatarUrl ?? null,
